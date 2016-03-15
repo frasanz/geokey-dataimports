@@ -1,0 +1,54 @@
+language: python
+
+python:
+  - '2.7'
+
+services:
+  - postgresql
+
+addons:
+  postgresql: '9.4'
+
+env:
+  - GEOKEY='>=0.9,<0.10' DJANGO='>=1.8,<1.9'
+  - GEOKEY='>=0.9,<0.10' DJANGO='>=1.9,<1.10'
+  - GEOKEY='>=0.10,<0.11' DJANGO='>=1.8,<1.9'
+  - GEOKEY='>=0.10,<0.11' DJANGO='>=1.9,<1.10'
+
+virtualenv:
+  system_site_packages: true
+
+install:
+  - sudo rm /etc/apt/sources.list.d/ubuntugis-stable-source.list
+  - sudo apt-get update -y
+  - sudo apt-get install python-gdal gdal-bin binutils
+  - export C_INCLUDE_PATH=/usr/include/gdal
+  - export CPLUS_INCLUDE_PATH=/usr/include/gdal
+  - pip install --upgrade pip
+
+before_script:
+  - psql template1 postgres -c 'create extension hstore;'
+  - psql -c 'create database geokey;' -U postgres
+  - psql -U postgres -d geokey -c "create extension postgis;"
+  - pip install geokey$GEOKEY
+  - pip install django$DJANGO
+  - python -c "import django; print('DJANGO %s ' % django.get_version())"
+  - python -c "from geokey.version import get_version; print('GEOKEY %s' % get_version())"
+  - pip install -r travis/requirements.txt
+  - pip install -e .
+  - python travis/manage.py migrate
+
+script:
+  - coverage run --source=geokey_dataimports travis/manage.py test geokey_dataimports
+
+after_success:
+  - coveralls
+
+deploy:
+  provider: pypi
+  user: excites
+  password:
+    secure:
+  on:
+    tags: true
+    branch: master
