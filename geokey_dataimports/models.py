@@ -59,7 +59,7 @@ class DataImport(StatusModel, TimeStampedModel):
 
 @receiver(models.signals.post_save, sender=DataImport)
 def post_save_dataimport(sender, instance, created, **kwargs):
-    """Make data fields and data features when the data import gets created."""
+    """Map data fields and data features when the data import gets created."""
     if created:
         csv.field_size_limit(sys.maxsize)
         file = open(instance.file.path, 'rU')
