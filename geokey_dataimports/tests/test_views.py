@@ -28,6 +28,8 @@ from ..views import (
     AllDataImportsPage,
     AddDataImportPage,
     SingleDataImportPage,
+    DataImportCreateCategoryPage,
+    DataImportAttachCategoryPage,
     RemoveDataImportPage
 )
 
