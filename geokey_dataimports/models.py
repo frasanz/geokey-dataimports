@@ -1,6 +1,7 @@
 """All models for the extension."""
 
 import sys
+import json
 import csv
 
 from osgeo import ogr
@@ -68,7 +69,16 @@ def post_save_dataimport(sender, instance, created, **kwargs):
         data_features = []
         errors = []
 
-        if instance.dataformat == FORMAT.CSV:
+        if instance.dataformat == FORMAT.GeoJSON:
+            reader = json.load(file)
+
+            if reader['type'] != 'FeatureCollection' or not reader['features']:
+                print 'Not a valid GeoJSON FeatureCollection.'
+
+            for feature in reader['features']:
+                for key, value in feature['properties'].iteritems():
+                    print value
+        elif instance.dataformat == FORMAT.CSV:
             reader = csv.reader(file)
             keys = set([])
 
