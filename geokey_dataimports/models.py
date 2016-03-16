@@ -101,13 +101,17 @@ def post_save_dataimport(sender, instance, created, **kwargs):
                     if column:
                         data_field = data_fields[i]
 
-                        field_type = 'GeometryField'
-                        geometry = ogr.CreateGeometryFromWkt(str(column))
-                        if geometry is not None:
+                        try:
+                            geometry = ogr.CreateGeometryFromWkt(str(column))
+                            geometry = geometry.ExportToJson()
+                        except:
+                            geometry = None
 
+                        field_type = 'GeometryField'
+                        if geometry is not None:
                             if field_type not in data_field['bad_types']:
                                 data_field['good_types'].add(field_type)
-                                geometries[data_field['key']] = column
+                                geometries[data_field['key']] = geometry
                         else:
                             data_field['good_types'].discard(field_type)
                             data_field['bad_types'].add(field_type)
