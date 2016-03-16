@@ -104,7 +104,7 @@ class AddDataImportPage(LoginRequiredMixin, ProjectContext, CreateView):
 
         Parameters
         ----------
-        form : geokey_import.forms.DataImportForm
+        form : geokey_dataimports.forms.DataImportForm
             Represents the user input.
 
         Returns
@@ -174,7 +174,7 @@ class AddDataImportPage(LoginRequiredMixin, ProjectContext, CreateView):
 
         Parameters
         ----------
-        form : geokey_import.forms.DataImportForm
+        form : geokey_dataimports.forms.DataImportForm
             Represents the user input.
 
         Returns
@@ -265,7 +265,7 @@ class SingleDataImportPage(DataImportContext, FormView):
 
         Returns
         -------
-        geokey_import.models.DataImport
+        geokey_dataimports.models.DataImport
             Data import object.
         """
         try:
@@ -307,7 +307,7 @@ class SingleDataImportPage(DataImportContext, FormView):
 
         Parameters
         ----------
-        form : geokey_import.forms.DataImportForm
+        form : geokey_dataimports.forms.DataImportForm
             Represents the user input.
 
         Returns
@@ -358,7 +358,7 @@ class SingleDataImportPage(DataImportContext, FormView):
 
         Parameters
         ----------
-        form : geokey_import.forms.DataImportForm
+        form : geokey_dataimports.forms.DataImportForm
             Represents the user input.
 
         Returns
