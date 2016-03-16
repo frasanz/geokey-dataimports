@@ -23,7 +23,7 @@ class UrlsTest(TestCase):
 
     def test_index_page_reverse(self):
         """Test reverser for index page."""
-        reversed_url = reverse('geokey_import:index')
+        reversed_url = reverse('geokey_dataimports:index')
         self.assertEqual(reversed_url, '/admin/dataimports/')
 
     def test_index_page_resolve(self):
@@ -34,7 +34,7 @@ class UrlsTest(TestCase):
     def test_all_data_imports_page_reverse(self):
         """Test reverser for all data imports page."""
         reversed_url = reverse(
-            'geokey_import:all_dataimports',
+            'geokey_dataimports:all_dataimports',
             kwargs={'project_id': 1}
         )
         self.assertEqual(reversed_url, '/admin/projects/1/dataimports/')
@@ -51,7 +51,7 @@ class UrlsTest(TestCase):
     def test_add_data_import_page_reverse(self):
         """Test reverser for adding data import page."""
         reversed_url = reverse(
-            'geokey_import:dataimport_add',
+            'geokey_dataimports:dataimport_add',
             kwargs={'project_id': 1}
         )
         self.assertEqual(reversed_url, '/admin/projects/1/dataimports/add/')
@@ -68,7 +68,7 @@ class UrlsTest(TestCase):
     def test_single_data_import_page_reverse(self):
         """Test reverser for single data import page."""
         reversed_url = reverse(
-            'geokey_import:single_dataimport',
+            'geokey_dataimports:single_dataimport',
             kwargs={'project_id': 1, 'dataimport_id': 5}
         )
         self.assertEqual(reversed_url, '/admin/projects/1/dataimports/5/')
@@ -86,7 +86,7 @@ class UrlsTest(TestCase):
     def test_data_import_create_category_page_reverse(self):
         """Test reverser for data import creating category page."""
         reversed_url = reverse(
-            'geokey_import:dataimport_create_category',
+            'geokey_dataimports:dataimport_create_category',
             kwargs={'project_id': 1, 'dataimport_id': 5}
         )
         self.assertEqual(
@@ -109,7 +109,7 @@ class UrlsTest(TestCase):
     def test_data_import_attach_category_page_reverse(self):
         """Test reverser for data import attaching category page."""
         reversed_url = reverse(
-            'geokey_import:dataimport_attach_category',
+            'geokey_dataimports:dataimport_attach_category',
             kwargs={'project_id': 1, 'dataimport_id': 5}
         )
         self.assertEqual(
@@ -132,7 +132,7 @@ class UrlsTest(TestCase):
     def test_remove_data_import_page_reverse(self):
         """Test reverser for removing data import page."""
         reversed_url = reverse(
-            'geokey_import:dataimport_remove',
+            'geokey_dataimports:dataimport_remove',
             kwargs={'project_id': 1, 'dataimport_id': 5}
         )
         self.assertEqual(
