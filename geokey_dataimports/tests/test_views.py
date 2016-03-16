@@ -21,7 +21,7 @@ from geokey.categories.tests.model_factories import CategoryFactory
 from .helpers import file_helpers
 from ..helpers.context_helpers import does_not_exist_msg
 from .model_factories import DataImportFactory
-from ..models import DataImport
+from ..models import DataImport, DataField, DataFeature
 from ..forms import DataImportForm
 from ..views import (
     IndexPage,
@@ -570,6 +570,8 @@ class AddDataImportPageTest(TestCase):
             rendered
         )
         self.assertEqual(DataImport.objects.count(), 0)
+        self.assertEqual(DataField.objects.count(), 0)
+        self.assertEqual(DataFeature.objects.count(), 0)
 
     def test_post_with_contributor(self):
         """
@@ -607,6 +609,8 @@ class AddDataImportPageTest(TestCase):
             rendered
         )
         self.assertEqual(DataImport.objects.count(), 0)
+        self.assertEqual(DataField.objects.count(), 0)
+        self.assertEqual(DataFeature.objects.count(), 0)
 
     def test_post_with_admin_when_creating_new_category(self):
         """
@@ -638,6 +642,8 @@ class AddDataImportPageTest(TestCase):
             response['location']
         )
         self.assertEqual(DataImport.objects.count(), 1)
+        self.assertEqual(DataField.objects.count(), 3)
+        self.assertEqual(DataFeature.objects.count(), 3)
 
     def test_post_with_admin_when_attaching_existing_category(self):
         """
@@ -669,6 +675,8 @@ class AddDataImportPageTest(TestCase):
             response['location']
         )
         self.assertEqual(DataImport.objects.count(), 1)
+        self.assertEqual(DataField.objects.count(), 3)
+        self.assertEqual(DataFeature.objects.count(), 3)
 
     def test_post_when_no_project(self):
         """
@@ -709,6 +717,8 @@ class AddDataImportPageTest(TestCase):
             rendered
         )
         self.assertEqual(DataImport.objects.count(), 0)
+        self.assertEqual(DataField.objects.count(), 0)
+        self.assertEqual(DataFeature.objects.count(), 0)
 
     def test_post_when_no_category(self):
         """
@@ -741,6 +751,8 @@ class AddDataImportPageTest(TestCase):
             response['location']
         )
         self.assertEqual(DataImport.objects.count(), 1)
+        self.assertEqual(DataField.objects.count(), 3)
+        self.assertEqual(DataFeature.objects.count(), 3)
 
     def test_post_when_project_is_locked(self):
         """
@@ -764,6 +776,8 @@ class AddDataImportPageTest(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(DataImport.objects.count(), 0)
+        self.assertEqual(DataField.objects.count(), 0)
+        self.assertEqual(DataFeature.objects.count(), 0)
 
 
 class RemoveDataImportPageTest(TestCase):
