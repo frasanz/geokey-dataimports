@@ -14,25 +14,32 @@
                 {% if filters %}
                     <div class="btn-group pull-right">
                         <button class="btn btn-sm btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                            <span>Filter projects</span>
+                            {% if request.GET.filter in filters %}
+                                {% for key, value in filters.items %}
+                                    {% if request.GET.filter == key %}
+                                        <span>{{ value }}</span>
+                                    {% endif %}
+                                {% endfor %}
+                            {% else %}
+                                <span>All projects</span>
+                            {% endif %}
+
                             <span class="caret"></span>
                         </button>
 
                         <ul class="dropdown-menu">
-                            <li>
-                                <a type="button" href="{{ request.path }}">
-                                    <span class="glyphicon glyphicon-ok {% if request.GET.filter %}invisible{% endif %}" aria-hidden="true"></span>
-                                    <span>All projects</span>
-                                </a>
-                            </li>
+                            {% if request.GET.filter in filters %}
+                                <li>
+                                    <a type="button" href="{{ request.path }}">All projects</a>
+                                </li>
+                            {% endif %}
 
                             {% for key, value in filters.items %}
-                                <li>
-                                    <a type="button" href="{{ request.path }}?filter={{ key }}">
-                                        <span class="glyphicon glyphicon-ok {% if request.GET.filter != key %}invisible{% endif %}" aria-hidden="true"></span>
-                                        <span>{{ value|safe }}</span>
-                                    </a>
-                                </li>
+                                {% if request.GET.filter != key %}
+                                    <li>
+                                        <a type="button" href="{{ request.path }}?filter={{ key }}">{{ value }}</a>
+                                    </li>
+                                {% endif %}
                             {% endfor %}
                         </ul>
                     </div>
