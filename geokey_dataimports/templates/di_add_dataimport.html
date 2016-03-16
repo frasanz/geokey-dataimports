@@ -1,0 +1,115 @@
+{% extends 'base.html' %}
+
+{% block bodydata %}
+data-project-id="{{ project.id }}"
+data-project-locked="{{ project.islocked }}"
+{% endblock %}
+
+{% block title %} | Project: {{ project.name }} - Add new data import{% endblock %}
+
+{% block main %}
+{% include 'snippets/di_header.html' %}
+
+<div class="container">
+    <div class="row">
+        <form role="form" id="form" class="col-md-8 col-md-offset-2" method="POST" action="{% url 'geokey_dataimports:dataimport_add' project.id %}" enctype="multipart/form-data" novalidate>
+            {% csrf_token %}
+
+            <h3 class="header">
+                {% if project.islocked %}<span class="glyphicon glyphicon-lock text-warning" aria-hidden="true"></span>{% endif %}
+                <span>Add new data import</span>
+            </h3>
+
+            <div class="form-group {% if form.errors.name %}has-error{% endif %}">
+                <label for="name" class="control-label">Name (required)</label>
+                <input type="text" id="name" class="form-control" name="name" value="{{ form.name.value|default_if_none:'' }}" maxlength="100" required />
+                {% if form.errors.name %}<span class="help-block">{{ form.errors.name|striptags }}</span>{% endif %}
+            </div>
+
+            <div class="form-group {% if form.errors.description %}has-error{% endif %}">
+                <label for="description" class="control-label">Description</label>
+                <textarea id="description" class="form-control" rows="5" name="description">{{ form.description.value|default_if_none:'' }}</textarea>
+                {% if form.errors.description %}<span class="help-block">{{ form.errors.description|striptags }}</span>{% endif %}
+            </div>
+
+            <div class="form-group {% if form.errors.file %}has-error{% endif %}">
+                <label for="file" class="control-label">GeoJSON, KML or CSV file (required)</label>
+                <input type="file" id="file" name="file" accept="application/json, application/vnd.google-earth.kml+xml, text/csv" data-target="file" required />
+                {% if form.errors.file %}<span class="help-block">{{ form.errors.file|striptags }}</span>{% endif %}
+            </div>
+
+            {% with categories=project.categories.all %}
+                <div class="form-group {% if not categories %}hidden{% endif %}">
+                    <label class="control-label">Create a new category for this data import?</label>
+                    <div class="radio">
+                        <label>
+                            <input type="radio" name="category_create" value="true" checked />
+                            <span><strong>Yes</strong>, create a new category</span>
+                        </label>
+                    </div>
+                    <div class="radio">
+                        <label>
+                            <input type="radio" name="category_create" value="false" />
+                            <span><strong>No</strong>, use an existing category</span>
+                        </label>
+                    </div>
+                </div>
+
+                {% if categories %}
+                    <div id="category-list" class="form-group hidden {% if form.errors.category %}has-error{% endif %}">
+                        <label for="category" class="control-label">Category (required)</label>
+                        <select id="category" class="form-control" name="category">
+                            <option value="">Please select a value</option>
+                            {% for category in categories %}
+                                <option value="{{ category.id }}">{{ category.name }}</option>
+                            {% endfor %}
+                        </select>
+                        {% if form.errors.category %}<span class="help-block">{{ form.errors.category|striptags }}</span>{% endif %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+
+            <div class="form-group">
+                <button type="submit" class="btn btn-primary">Save</button>
+                <a href="{% url 'geokey_dataimports:all_dataimports' project.id %}" class="btn btn-link" role="button">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block libraries %}
+<link rel="stylesheet" href="/static/lib/bootstrap-fileinput/css/bootstrap-fileinput.min.css">
+<script type="text/javascript" src="/static/lib/bootstrap-fileinput/js/bootstrap-fileinput.min.js"></script>
+
+<script type="text/javascript" src="/static/js/admin.ui.forms.validate.js"></script>
+<script type="text/javascript" src="/static/js/admin.ui.fileinput.js"></script>
+
+<script type="text/javascript">
+    // Initialise file upload
+    $('input:file').each(function() {
+        Ui.FileInput.init($(this), {
+            showUpload: false,
+            showCancel: false,
+            showPreview: false
+        });
+    });
+
+    $('input[name="category_create"]').change(function() {
+        var list = $('#category-list');
+
+        if (JSON.parse($(this).val().toLowerCase())) {
+            list.addClass('hidden');
+            list.find('select').attr('required', false);
+        } else {
+            list.removeClass('hidden');
+            list.find('select').attr('required', true);
+        }
+    });
+
+    // Hack to position Help Block for file upload (when it's required but empty)
+    $('body').on('DOMNodeInserted', 'input:file ~ .help-block', function () {
+        $(this).detach().appendTo('.file-input');
+    });
+</script>
+{% endblock %}

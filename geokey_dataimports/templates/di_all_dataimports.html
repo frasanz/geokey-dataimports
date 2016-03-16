@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+
+{% block bodydata %}
+data-project-id="{{ project.id }}"
+data-project-locked="{{ project.islocked }}"
+{% endblock %}
+
+{% block title %} | Project: {{ project.name }} - Data imports{% endblock %}
+
+{% block main %}
+{% include 'snippets/di_header.html' %}
+
+<div class="container">
+    <div class="row">
+        <div class="col-md-12">
+            <h3 class="header">
+                {% if project.islocked %}<span class="glyphicon glyphicon-lock text-warning" aria-hidden="true"></span>{% endif %}
+                <span>Data imports</span>
+
+                {% if project.dataimports.all and not project.islocked %}
+                    <a role="button" href="{% url 'geokey_dataimports:dataimport_add' project.id %}" class="btn btn-sm btn-success pull-right">
+                        <span class="glyphicon glyphicon-plus"></span>
+                        <span>Add new data import</span>
+                    </a>
+                {% endif %}
+            </h3>
+
+            <ul class="list-unstyled overview-list">
+                {% for dataimport in project.dataimports.all %}
+                    <li>
+                        <h4>
+                            {% if project.islocked %}<span class="glyphicon glyphicon-lock text-warning" aria-hidden="true"></span>{% endif %}
+                            <a href="{% url 'geokey_dataimports:single_dataimport' project.id dataimport.id %}">{{ dataimport.name }}</a>
+                        </h4>
+
+                        <p class="meta" style="padding-bottom: 10px">
+                            <span class="lower-case">{{ dataimport.data_format }}</span>
+                            {% if not dataimport.category %}/ <span class="text-warning">No category selected</span>{% endif %}
+                        </p>
+
+                        {% if dataimport.description %}<p class="description">{{ dataimport.description }}</p>{% endif %}
+
+                        <p class="meta">Added by {{ dataimport.creator }} {{ dataimport.created|timesince }} ago</p>
+                    </li>
+                {% empty %}
+                    <li>
+                        <div class="well empty-list">
+                            <p class="lead">We couldn't find any data imports for this project.</p>
+
+                            {% if project.islocked %}
+                                <p>Unfortunately, you cannot add new data imports when the project is locked.</p>
+                            {% else %}
+                                <a href="{% url 'geokey_dataimports:dataimport_add' project.id %}" class="btn btn-success">Add new data import</a>
+                            {% endif %}
+                        </div>
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}

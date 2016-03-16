@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+
+{% block title %} | Import{% endblock %}
+
+{% block main %}
+{% include 'snippets/di_header.html' %}
+
+<div class="container">
+    <div class="row">
+        <div class="col-md-12">
+            <h3 class="header">
+                <span>Manage data imports</span>
+
+                {% if filters %}
+                    <div class="btn-group pull-right">
+                        <button class="btn btn-sm btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            <span>Filter projects</span>
+                            <span class="caret"></span>
+                        </button>
+
+                        <ul class="dropdown-menu">
+                            <li>
+                                <a type="button" href="{{ request.path }}">
+                                    <span class="glyphicon glyphicon-ok {% if request.GET.filter %}invisible{% endif %}" aria-hidden="true"></span>
+                                    <span>All projects</span>
+                                </a>
+                            </li>
+
+                            {% for key, value in filters.items %}
+                                <li>
+                                    <a type="button" href="{{ request.path }}?filter={{ key }}">
+                                        <span class="glyphicon glyphicon-ok {% if request.GET.filter != key %}invisible{% endif %}" aria-hidden="true"></span>
+                                        <span>{{ value|safe }}</span>
+                                    </a>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% endif %}
+            </h3>
+
+            <ul class="list-unstyled overview-list">
+                {% for project in projects %}
+                    <li>
+                        <h3>
+                            {% if project.islocked %}<span class="glyphicon glyphicon-lock text-warning" aria-hidden="true"></span>{% endif %}
+                            <a href="{% url 'geokey_dataimports:all_dataimports' project.id %}">{{ project.name }}</a>
+                        </h3>
+
+                        <p>
+                            {% if project.status == 'inactive' %}<label class="label label-warning">Archived</label>{% endif %}
+                            {% with dataimports=project.dataimports.count %}<label class="label label-primary">{{ dataimports }} data import{{ dataimports|pluralize }}</label>{% endwith %}
+                        </p>
+
+                        <p class="meta">Created by {{ project.creator }} {{ project.created_at|timesince }} ago</p>
+                    </li>
+                {% empty %}
+                    {% if request.GET.filter %}
+                        <li>
+                            <div class="well empty-list">
+                                <p class="lead">We couldn't find any projects matching the selected filter.</p>
+                            </div>
+                        </li>
+                    {% else %}
+                        <li>
+                            <div class="well empty-list">
+                                <p class="lead">We couldn't find any projects you are eligible to manage.</p>
+                                <p>You can create a new project if you want to import data to it.</p>
+                                <a href="{% url 'admin:project_create' %}" class="btn btn-lg btn-success">Create a new project</a>
+                            </div>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}

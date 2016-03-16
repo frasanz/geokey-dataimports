@@ -1,0 +1,130 @@
+{% extends 'base.html' %}
+
+{% block bodydata %}
+data-project-id="{{ project.id }}"
+data-project-locked="{{ project.islocked }}"
+data-dataimport-id="{{ dataimport.id }}"
+{% endblock %}
+
+{% block title %} | Project: {{ project.name }} - Data import: {{ dataimport.name }}{% endblock %}
+
+{% block main %}
+{% include 'snippets/di_header.html' %}
+
+<div class="container">
+    <div class="row">
+        <div class="col-md-4">
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h6 class="item-info">Data import</h6>
+                    <h3>{{ dataimport.name }}</h3>
+                </div>
+
+                {% if not dataimport.category %}
+                    <div class="panel-body alert alert-warning" style="margin-bottom: 0px">
+                        <p>It looks like the data import does not have a category associated with it. Data cannot be imported.</p>
+                        <p>Please select an existing category from the list provided or <a href="{% url 'geokey_dataimports:dataimport_create_category' project.id dataimport.id %}">create a new category</a>.</p>
+                    </div>
+                {% else %}
+                    <div class="panel-body alert alert-warning" style="margin-bottom: 0px">
+                        <p>It looks like the category has been associated, but all the required fields were not attached properly. Data cannot be imported.</p>
+                        <p>Please <a href="{% url 'geokey_dataimports:dataimport_attach_category' project.id dataimport.id %}">attach the category</a> correctly.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <form role="form" id="form" class="col-md-8" method="POST" action="{% url 'geokey_dataimports:single_dataimport' project.id dataimport.id %}" novalidate>
+            {% csrf_token %}
+
+            <h3 class="header">
+                {% if project.islocked %}<span class="glyphicon glyphicon-lock text-warning" aria-hidden="true"></span>{% endif %}
+                <span>Data import settings</span>
+            </h3>
+
+            <div class="form-group {% if form.errors.name %}has-error{% endif %}">
+                <label for="name" class="control-label">Name (required)</label>
+                <input type="text" id="name" class="form-control" name="name" value="{{ form.name.value|default_if_none:dataimport.name }}" maxlength="100" required />
+                {% if form.errors.name %}<span class="help-block">{{ form.errors.name|striptags }}</span>{% endif %}
+            </div>
+
+            <div class="form-group {% if form.errors.description %}has-error{% endif %}">
+                <label for="description" class="control-label">Description</label>
+                <textarea id="description" class="form-control" rows="5" name="description">{{ form.description.value|default_if_none:dataimport.description }}</textarea>
+                {% if form.errors.description %}<span class="help-block">{{ form.errors.description|striptags }}</span>{% endif %}
+            </div>
+
+            {% with categories=project.categories.all %}
+                {% if not dataimport.category and categories %}
+                    <div id="category-list" class="form-group {% if form.errors.category %}has-error{% endif %}">
+                        <label for="category" class="control-label">Category (required)</label>
+                        <select id="category" class="form-control" name="category" required>
+                            <option value="">Please select a value</option>
+                            {% for category in categories %}
+                                <option value="{{ category.id }}">{{ category.name }}</option>
+                            {% endfor %}
+                        </select>
+                        {% if form.errors.category %}<span class="help-block">{{ form.errors.category|striptags }}</span>{% endif %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+
+            <div class="form-group">
+                <button type="submit" class="btn btn-primary">Save</button>
+                <a href="{% url 'geokey_dataimports:all_dataimports' project.id %}" class="btn btn-link" role="button">Cancel</a>
+            </div>
+        </form>
+    </div>
+
+    {% if not project.islocked %}
+        <div class="row">
+            <div class="col-md-8 col-md-offset-4">
+                <div class="panel panel-danger">
+                    <div class="panel-heading">
+                        <h2 class="panel-title">Be careful!</h2>
+                    </div>
+
+                    <div class="panel-body becareful">
+                        <div>
+                            <strong>Remove data import</strong>
+                            <p>Removing a data import cannot be undone.</p>
+                            <a href="#" class="text-danger" data-toggle="modal" data-target="#remove-confirm">Remove this data import</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block modals %}
+<div role="dialog" id="remove-confirm" class="modal fade" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content panel-danger">
+            <div class="modal-header panel-heading">
+                <button class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                <h4 class="modal-title">Are you sure?</h4>
+            </div>
+
+            <div class="modal-body panel-body">
+                <p><strong>Before you remove the data import, please read through the consequences of this action:</strong></p>
+
+                <ul>
+                    <li>Removing an data import cannot be undone</li>
+                    <li>It will not delete any of the data already imported</li>
+                    <li>It will not delete any contributions from the project</li>
+                </ul>
+            </div>
+
+            <div class="modal-footer panel-footer">
+                <a type="button" href="{% url 'geokey_dataimports:dataimport_remove' project.id dataimport.id %}" class="btn btn-danger">I'm absolutely sure, remove the data import!</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block libraries %}
+<script type="text/javascript" src="/static/js/admin.ui.forms.validate.js"></script>
+{% endblock %}
