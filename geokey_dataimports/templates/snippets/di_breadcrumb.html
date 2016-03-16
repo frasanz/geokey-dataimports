@@ -1,0 +1,31 @@
+{% if request.resolver_match.url_name != 'index' %}
+    <ol class="breadcrumb">
+        <li>
+            <a href="{% url 'geokey_dataimports:index' %}">Extension home</a>
+        </li>
+
+        {% if request.resolver_match.url_name == 'all_dataimports' %}
+            <li class="active">Data imports</li>
+        {% elif project %}
+            <li>
+                <a href="{% url 'geokey_dataimports:all_dataimports' project.id %}">Data imports</a>
+            </li>
+
+            {% if dataimport and request.resolver_match.url_name != 'single_dataimport' %}
+                <li>
+                    <a href="{% url 'geokey_dataimports:single_dataimport' project.id dataimport.id %}">Selected data import</a>
+                </li>
+            {% endif %}
+        {% endif %}
+
+        {% if request.resolver_match.url_name == 'dataimport_add' %}
+            <li class="active">Add new data import</li>
+        {% elif request.resolver_match.url_name == 'single_dataimport' %}
+            <li class="active">Data import settings</li>
+        {% elif request.resolver_match.url_name == 'dataimport_create_category' %}
+            <li class="active">Create new category</li>
+        {% elif request.resolver_match.url_name == 'dataimport_attach_category' %}
+            <li class="active">Attach existing category</li>
+        {% endif %}
+    </ol>
+{% endif %}

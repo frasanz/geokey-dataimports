@@ -1,0 +1,20 @@
+<div class="page-header">
+    <div class="container">
+        {% if project %}
+            {% if request.resolver_match.url_name == 'all_dataimports' %}
+                <h1>{{ project.name }}</h1>
+            {% else %}
+                <h1 class="smaller">
+                    <a href="{% url 'geokey_dataimports:all_dataimports' project.id %}">{{ project.name }}</a>
+                </h1>
+            {% endif %}
+        {% else %}
+            <h1>Data Imports</h1>
+        {% endif %}
+    </div>
+</div>
+
+<div class="container">
+    {% include 'snippets/messages.html' %}
+    {% include 'snippets/di_breadcrumb.html' %}
+</div>
