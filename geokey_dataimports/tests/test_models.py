@@ -18,6 +18,10 @@ from ..models import DataImport, post_save_project, post_save_category
 class DataImportTest(TestCase):
     """Test data import model."""
 
+    def setUp(self):
+        """Set up test."""
+        self.file = None
+
     def tearDown(self):
         """Tear down test."""
         if self.file:
@@ -34,6 +38,10 @@ class DataImportTest(TestCase):
 
 class PostSaveProjectTest(TestCase):
     """Test post save for project."""
+
+    def setUp(self):
+        """Set up test."""
+        self.file = None
 
     def tearDown(self):
         """Tear down test."""
@@ -59,6 +67,10 @@ class PostSaveProjectTest(TestCase):
 
 class PostSaveCategoryTest(TestCase):
     """Test post save for category."""
+
+    def setUp(self):
+        """Set up test."""
+        self.file = None
 
     def tearDown(self):
         """Tear down test."""
