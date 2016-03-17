@@ -35,7 +35,13 @@ data-project-locked="{{ project.islocked }}"
 
                         <p class="meta" style="padding-bottom: 10px">
                             <span class="lower-case">{{ dataimport.dataformat }}</span>
-                            {% if not dataimport.category %}/ <span class="text-warning">No category selected</span>{% endif %}
+                            {% if dataimport.status == 'invalid' %}
+                                <span>/</span>
+                                <span class="text-danger">Invalid data import or file corrupted</span>
+                            {% elif not dataimport.category %}
+                                <span>/</span>
+                                <span class="text-warning">No category selected</span>
+                            {% endif %}
                         </p>
 
                         {% if dataimport.description %}<p class="description">{{ dataimport.description }}</p>{% endif %}
