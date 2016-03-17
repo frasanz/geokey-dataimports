@@ -1,0 +1,101 @@
+{% extends 'base.html' %}
+
+{% block bodydata %}
+data-project-id="{{ project.id }}"
+data-project-locked="{{ project.islocked }}"
+data-dataimport-id="{{ dataimport.id }}"
+{% endblock %}
+
+{% block title %} | Project: {{ project.name }} - Data import: {{ dataimport.name }} - Create category{% endblock %}
+
+{% block main %}
+{% include 'snippets/di_header.html' %}
+
+<div class="container">
+    <div class="row">
+        <form role="form" id="form" class="col-md-8 col-md-offset-2" method="POST" action="{% url 'geokey_dataimports:dataimport_create_category' project.id dataimport.id %}" novalidate>
+            {% csrf_token %}
+
+            <h3 class="header">
+                {% if project.islocked %}<span class="glyphicon glyphicon-lock text-warning" aria-hidden="true"></span>{% endif %}
+                <span>Create category</span>
+            </h3>
+
+            <div class="form-group {% if form.errors.name %}has-error{% endif %}">
+                <label for="name" class="control-label">Name (required)</label>
+                <input type="text" id="name" class="form-control" name="name" value="{{ form.name.value|default_if_none:'' }}" maxlength="100" required />
+                {% if form.errors.name %}<span class="help-block">{{ form.errors.name|striptags }}</span>{% endif %}
+            </div>
+
+            <div class="form-group {% if form.errors.description %}has-error{% endif %}">
+                <label for="description" class="control-label">Description</label>
+                <textarea id="description" class="form-control" rows="5" name="description">{{ form.description.value|default_if_none:'' }}</textarea>
+                {% if form.errors.description %}<span class="help-block">{{ form.errors.description|striptags }}</span>{% endif %}
+            </div>
+
+            <h4>Fields</h4>
+
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th><input type="checkbox" class="toggle" checked /></th>
+                        <th>Name</th>
+                        <th>Field type</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for datafield in dataimport.datafields.all %}
+                        <tr>
+                            <td>
+                                <input type="checkbox" name="ids" value="{{ datafield.id }}" checked />
+                            </td>
+
+                            <td class="form-group">
+                                <input type="text" name="fieldname_{{ datafield.id }}" class="form-control" value="{{ datafield.name }}" required />
+                            </td>
+
+                            <td class="form-group">
+                                <select name="fieldtype_{{ datafield.id }}" class="form-control" required>
+                                    <option value="">Please select a value</option>
+                                    {% for type in datafield.types %}
+                                        <option value="{{ type }}">{{ type }}</option>
+                                    {% endfor %}
+                                </select>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <div class="form-group">
+                <button type="submit" class="btn btn-primary">Save</button>
+                <a href="{% url 'geokey_dataimports:single_dataimport' project.id dataimport.id %}" class="btn btn-link" role="button">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block libraries %}
+<script type="text/javascript" src="/static/js/admin.ui.forms.validate.js"></script>
+
+<script>
+    // Toggle all checkboxes
+    $('input.toggle').change(function () {
+        $('input[name="ids"]').prop('checked', this.checked).trigger('change');
+    });
+
+    // Toggle required fields when field is checked/unchecked
+    $('input[name="ids"]').change(function () {
+        var tr = $(this).parents('tr');
+
+        if (!this.checked) {
+            tr.find('.form-group').removeClass('has-error');
+            tr.find('.help-block').remove();
+        }
+
+        tr.find('input[name*="fieldname"], select[name*="fieldtype"]').prop('required', this.checked);
+    });
+</script>
+{% endblock %}

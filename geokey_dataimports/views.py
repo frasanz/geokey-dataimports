@@ -12,12 +12,12 @@ from braces.views import LoginRequiredMixin
 
 from geokey.projects.models import Project
 from geokey.projects.views import ProjectContext
-from geokey.categories.models import Category
+from geokey.categories.models import Category, Field
 
 from .helpers.context_helpers import does_not_exist_msg
 from .base import FORMAT
 from .models import DataImport
-from .forms import DataImportForm
+from .forms import CategoryForm, DataImportForm
 
 
 # ###########################
@@ -387,10 +387,114 @@ class SingleDataImportPage(DataImportContext, FormView):
         )
 
 
-class DataImportCreateCategoryPage(TemplateView):
+class DataImportCreateCategoryPage(DataImportContext, CreateView):
     """Create category for data import page."""
 
     template_name = 'di_create_category.html'
+    form_class = CategoryForm
+
+    def get_context_data(self, *args, **kwargs):
+        """
+        GET method for the template.
+
+        Return the context to render the view. Overwrite the method by adding
+        project ID and data import ID to the context.
+
+        Returns
+        -------
+        dict
+            Context.
+        """
+        project_id = self.kwargs['project_id']
+        dataimport_id = self.kwargs['dataimport_id']
+
+        return super(DataImportCreateCategoryPage, self).get_context_data(
+            project_id,
+            dataimport_id,
+            *args,
+            **kwargs
+        )
+
+    def form_valid(self, form):
+        """
+        Create category and fields when form data is valid.
+
+        Parameters
+        ----------
+        form : geokey_dataimports.forms.CategoryForm
+            Represents the user input.
+
+        Returns
+        -------
+        django.http.HttpResponse
+            Rendered template.
+        """
+        context = self.get_context_data(form=form)
+        dataimport = context.get('dataimport')
+        project = context.get('project')
+
+        if dataimport and project:
+            if project.islocked:
+                messages.error(
+                    self.request,
+                    'The project is locked. New categories cannot be created.'
+                )
+            else:
+                data = self.request.POST
+
+                category = Category.objects.create(
+                    name=form.instance.name,
+                    description=form.instance.description,
+                    project=project,
+                    creator=self.request.user
+                )
+
+                dataimport.category = category
+                dataimport.save()
+
+                datafields = dataimport.datafields.all()
+                ids = data.getlist('ids')
+
+                if ids:
+                    for datafield in datafields.filter(id__in=ids):
+                        Field.create(
+                            data.get('fieldname_%s' % datafield.id),
+                            datafield.key,
+                            '', False,
+                            category,
+                            data.get('fieldtype_%s' % datafield.id)
+                        )
+
+                datafields.delete()
+
+                messages.success(
+                    self.request,
+                    'The category has been created.'
+                )
+                return redirect(
+                    'geokey_dataimports:single_dataimport',
+                    project_id=project.id,
+                    dataimport_id=dataimport.id
+                )
+
+        return self.render_to_response(context)
+
+    def form_invalid(self, form):
+        """
+        Display an error message when form data is invalid.
+
+        Parameters
+        ----------
+        form : geokey_dataimports.forms.CategoryForm
+            Represents the user input.
+
+        Returns
+        -------
+        dict
+            Context.
+        """
+        messages.error(self.request, 'An error occurred.')
+        return self.render_to_response(self.get_context_data(form=form))
 
 
 class DataImportAttachCategoryPage(TemplateView):
