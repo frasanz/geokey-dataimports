@@ -3,5 +3,5 @@
 from model_utils import Choices
 
 
-STATUS = Choices('active', 'deleted')
+STATUS = Choices('active', 'invalid', 'deleted')
 FORMAT = Choices('GeoJSON', 'KML', 'CSV')
