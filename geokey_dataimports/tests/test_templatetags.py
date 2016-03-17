@@ -2,8 +2,7 @@
 
 from django.test import TestCase
 
-from .model_factories import DataImportFactory, DataFeatureFactory
-from ..models import DataFeature
+from .model_factories import DataFeatureFactory
 from ..templatetags import di_tags
 
 
@@ -28,10 +27,3 @@ class FilterImportedTest(TestCase):
             di_tags.filter_imported(datafeatures),
             [datafeature_1]
         )
-
-        # dataimport = DataImportFactory.create()
-        # DataFeatureFactory.create(imported=True, dataimport=dataimport)
-        # DataFeatureFactory.create(imported=False, dataimport=dataimport)
-        # datafeatures = dataimport.datafeatures.all()
-
-        # self.assertEqual(di_tags.filter_imported(datafeatures), 1)
