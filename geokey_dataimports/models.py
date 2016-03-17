@@ -233,7 +233,7 @@ def post_save_dataimport(sender, instance, created, **kwargs):
                 if len(geometries) == 0:
                     errors.append({
                         'line': line,
-                        'messages': ['Entry has no geometry set.']
+                        'messages': ['The entry has no geometry set.']
                     })
                 else:
                     data_features.append({
