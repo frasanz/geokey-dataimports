@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-"""GeoKey extension for importing data from various formats to GeoKey."""
+"""GeoKey extension for importing data from various formats into GeoKey."""
 
 from os.path import join
 from setuptools import setup, find_packages
@@ -13,7 +13,7 @@ repository = join('https://github.com/ExCiteS', name)
 setup(
     name=name,
     version=version,
-    description='Import data from various formats to GeoKey',
+    description='Import data from various formats into GeoKey',
     url=repository,
     download_url=join(repository, 'tarball', version),
     author='ExCiteS',

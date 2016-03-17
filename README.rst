@@ -13,7 +13,7 @@
 geokey-dataimports
 ==================
 
-Import data from various formats (GeoJSON, KML, CSV) to GeoKey.
+Import data from various formats (GeoJSON, KML, CSV) into GeoKey.
 
 Install
 -------
