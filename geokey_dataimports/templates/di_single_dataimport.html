@@ -26,7 +26,7 @@ data-dataimport-id="{{ dataimport.id }}"
                         <p>It looks like the data import does not have a category associated with it. Data cannot be imported.</p>
                         <p>Please select an existing category from the list provided or <a href="{% url 'geokey_dataimports:dataimport_create_category' project.id dataimport.id %}">create a new category</a>.</p>
                     </div>
-                {% elif dataimport.datafields|length != 0 %}
+                {% elif dataimport.datafields.count != 0 %}
                     <div class="panel-body alert alert-warning" style="margin-bottom: 0px">
                         <p>It looks like the category has been associated, but all the required fields were not attached properly. Data cannot be imported.</p>
                         <p>Please <a href="{% url 'geokey_dataimports:dataimport_attach_category' project.id dataimport.id %}">attach the category</a> correctly.</p>
