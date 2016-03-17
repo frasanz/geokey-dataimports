@@ -440,37 +440,44 @@ class DataImportCreateCategoryPage(DataImportContext, CreateView):
                     'The project is locked. New categories cannot be created.'
                 )
             else:
-                data = self.request.POST
+                if dataimport.category:
+                    messages.error(
+                        self.request,
+                        'The data import already has a category associated '
+                        'with it.'
+                    )
+                else:
+                    data = self.request.POST
 
-                category = Category.objects.create(
-                    name=form.instance.name,
-                    description=form.instance.description,
-                    project=project,
-                    creator=self.request.user
-                )
+                    category = Category.objects.create(
+                        name=form.instance.name,
+                        description=form.instance.description,
+                        project=project,
+                        creator=self.request.user
+                    )
 
-                dataimport.category = category
-                dataimport.save()
+                    dataimport.category = category
+                    dataimport.save()
 
-                datafields = dataimport.datafields.all()
-                ids = data.getlist('ids')
+                    datafields = dataimport.datafields.all()
+                    ids = data.getlist('ids')
 
-                if ids:
-                    for datafield in datafields.filter(id__in=ids):
-                        Field.create(
-                            data.get('fieldname_%s' % datafield.id),
-                            datafield.key,
-                            '', False,
-                            category,
-                            data.get('fieldtype_%s' % datafield.id)
-                        )
+                    if ids:
+                        for datafield in datafields.filter(id__in=ids):
+                            Field.create(
+                                data.get('fieldname_%s' % datafield.id),
+                                datafield.key,
+                                '', False,
+                                category,
+                                data.get('fieldtype_%s' % datafield.id)
+                            )
 
-                datafields.delete()
+                    datafields.delete()
+                    messages.success(
+                        self.request,
+                        'The category has been created.'
+                    )
 
-                messages.success(
-                    self.request,
-                    'The category has been created.'
-                )
                 return redirect(
                     'geokey_dataimports:single_dataimport',
                     project_id=project.id,
