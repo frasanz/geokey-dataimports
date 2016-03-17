@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load di_tags %}
 
 {% block bodydata %}
 data-project-id="{{ project.id }}"
@@ -25,10 +26,20 @@ data-dataimport-id="{{ dataimport.id }}"
                         <p>It looks like the data import does not have a category associated with it. Data cannot be imported.</p>
                         <p>Please select an existing category from the list provided or <a href="{% url 'geokey_dataimports:dataimport_create_category' project.id dataimport.id %}">create a new category</a>.</p>
                     </div>
-                {% else %}
+                {% elif dataimport.datafields|length != 0 %}
                     <div class="panel-body alert alert-warning" style="margin-bottom: 0px">
                         <p>It looks like the category has been associated, but all the required fields were not attached properly. Data cannot be imported.</p>
                         <p>Please <a href="{% url 'geokey_dataimports:dataimport_attach_category' project.id dataimport.id %}">attach the category</a> correctly.</p>
+                    </div>
+                {% else %}
+                    <div id="statistics" class="panel-body">
+                        {% with imported=dataimport.datafeatures|filter_imported %}
+                            <span class="number">{{ imported.count }}</span>
+                            <p>already imported</p>
+
+                            <span class="number">{{ dataimport.datafeatures.count|subtract:imported.count }}</span>
+                            <p>left to import</p>
+                        {% endwith %}
                     </div>
                 {% endif %}
             </div>
