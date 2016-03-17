@@ -154,21 +154,22 @@ def post_save_dataimport(sender, instance, created, **kwargs):
             for field_name in next(reader, None):
                 field_name = strip_tags(field_name)
 
-                proposed_key = slugify(field_name)
-                suggested_key = proposed_key
+                if field_name:
+                    proposed_key = slugify(field_name)
+                    suggested_key = proposed_key
 
-                count = 1
-                while suggested_key in keys:
-                    suggested_key = '%s-%s' % (proposed_key, count)
-                    count += 1
-                keys.add(suggested_key)
+                    count = 1
+                    while suggested_key in keys:
+                        suggested_key = '%s-%s' % (proposed_key, count)
+                        count += 1
+                    keys.add(suggested_key)
 
-                data_fields.append({
-                    'name': field_name,
-                    'key': suggested_key,
-                    'good_types': set([]),
-                    'bad_types': set([])
-                })
+                    data_fields.append({
+                        'name': field_name,
+                        'key': suggested_key,
+                        'good_types': set(['TextField', 'LookupField']),
+                        'bad_types': set([])
+                    })
 
             line = 0
             for row in reader:
@@ -194,9 +195,6 @@ def post_save_dataimport(sender, instance, created, **kwargs):
                         else:
                             data_field['good_types'].discard(field_type)
                             data_field['bad_types'].add(field_type)
-
-                            data_field['good_types'].add('TextField')
-                            data_field['good_types'].add('LookupField')
 
                             field_type = 'NumericField'
                             if type_helpers.is_numeric(column):
