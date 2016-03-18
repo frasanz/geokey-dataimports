@@ -572,14 +572,27 @@ class DataImportAssignFieldsPage(DataImportContext, TemplateView):
                             changed_keys[datafield.key] = field_key
                             keys.append(field_key)
                         else:
+                            proposed_key = datafield.key
+                            suggested_key = proposed_key
+
+                            count = 1
+                            while dataimport.category.fields.filter(
+                                    key=suggested_key).exists():
+                                suggested_key = '%s-%s' % (proposed_key, count)
+                                count += 1
+
                             Field.create(
                                 data.get('fieldname_%s' % datafield.id),
-                                datafield.key,
+                                suggested_key,
                                 '', False,
                                 dataimport.category,
                                 data.get('fieldtype_%s' % datafield.id)
                             )
-                            keys.append(datafield.key)
+
+                            keys.append(suggested_key)
+
+                            if suggested_key != proposed_key:
+                                changed_keys[proposed_key] = suggested_key
 
                     for datafeature in dataimport.datafeatures.all():
                         properties = datafeature.properties
