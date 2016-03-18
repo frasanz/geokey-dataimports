@@ -39,6 +39,7 @@ class DataImport(StatusModel, TimeStampedModel):
         upload_to='dataimports/files',
         max_length=500
     )
+    keys = ArrayField(models.CharField(max_length=100), null=True, blank=True)
 
     project = models.ForeignKey(
         'projects.Project',

@@ -429,12 +429,12 @@ class DataImportCreateCategoryPage(DataImportContext, CreateView):
         django.http.HttpResponse
             Rendered template.
         """
+        data = self.request.POST
         context = self.get_context_data(form=form)
         dataimport = context.get('dataimport')
-        project = context.get('project')
 
-        if dataimport and project:
-            if project.islocked:
+        if dataimport:
+            if dataimport.project.islocked:
                 messages.error(
                     self.request,
                     'The project is locked. New categories cannot be created.'
@@ -444,23 +444,19 @@ class DataImportCreateCategoryPage(DataImportContext, CreateView):
                     messages.error(
                         self.request,
                         'The data import already has a category associated '
-                        'with it.'
+                        'with it. Unfortunately, this cannot be changed.'
                     )
                 else:
-                    data = self.request.POST
-
                     category = Category.objects.create(
                         name=form.instance.name,
                         description=form.instance.description,
-                        project=project,
+                        project=dataimport.project,
                         creator=self.request.user
                     )
 
-                    dataimport.category = category
-                    dataimport.save()
-
                     datafields = dataimport.datafields.all()
                     ids = data.getlist('ids')
+                    keys = []
 
                     if ids:
                         for datafield in datafields.filter(id__in=ids):
@@ -471,8 +467,13 @@ class DataImportCreateCategoryPage(DataImportContext, CreateView):
                                 category,
                                 data.get('fieldtype_%s' % datafield.id)
                             )
+                            keys.append(datafield.key)
 
+                    dataimport.category = category
+                    dataimport.keys = keys
+                    dataimport.save()
                     datafields.delete()
+
                     messages.success(
                         self.request,
                         'The category has been created.'
@@ -480,7 +481,7 @@ class DataImportCreateCategoryPage(DataImportContext, CreateView):
 
                 return redirect(
                     'geokey_dataimports:single_dataimport',
-                    project_id=project.id,
+                    project_id=dataimport.project.id,
                     dataimport_id=dataimport.id
                 )
 

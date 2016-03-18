@@ -59,6 +59,7 @@ class Migration(migrations.Migration):
                 ('description', models.TextField(null=True, blank=True)),
                 ('dataformat', models.CharField(max_length=10, choices=[(b'GeoJSON', b'GeoJSON'), (b'KML', b'KML'), (b'CSV', b'CSV')])),
                 ('file', models.FileField(max_length=500, upload_to=b'dataimports/files')),
+                ('keys', django.contrib.postgres.fields.ArrayField(size=None, null=True, base_field=models.CharField(max_length=100), blank=True)),
                 ('category', models.ForeignKey(blank=True, to='categories.Category', null=True)),
                 ('creator', models.ForeignKey(to=settings.AUTH_USER_MODEL)),
                 ('project', models.ForeignKey(related_name='dataimports', to='projects.Project')),
