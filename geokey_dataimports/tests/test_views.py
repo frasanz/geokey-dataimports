@@ -29,7 +29,7 @@ from ..views import (
     AddDataImportPage,
     SingleDataImportPage,
     DataImportCreateCategoryPage,
-    DataImportAttachCategoryPage,
+    DataImportAssignFieldsPage,
     RemoveDataImportPage
 )
 
@@ -361,7 +361,6 @@ class AddDataImportPageTest(TestCase):
         self.data = {
             'name': 'Test Import',
             'description': '',
-            'dataformat': 'CSV',
             'file': File(open(file_helpers.get_csv_file().name)),
             'category_create': 'true'
         }
@@ -647,10 +646,10 @@ class AddDataImportPageTest(TestCase):
 
     def test_post_with_admin_when_attaching_existing_category(self):
         """
-        Test POST with with admin, when attaching an existing category.
+        Test POST with with admin, when selecting category.
 
         It should add new data import, when user is an administrator. Also, it
-        should redirect to a page to attach an existing category.
+        should redirect to a page to assing fields.
         """
         self.data['category_create'] = 'false'
         self.data['category'] = self.category.id
@@ -666,7 +665,7 @@ class AddDataImportPageTest(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertIn(
             reverse(
-                'geokey_dataimports:dataimport_attach_category',
+                'geokey_dataimports:dataimport_assign_fields',
                 kwargs={
                     'project_id': self.project.id,
                     'dataimport_id': DataImport.objects.first().id
@@ -725,8 +724,8 @@ class AddDataImportPageTest(TestCase):
         Test POST with with admin, when category does not exist.
 
         It should add new data import, when user is an administrator. Also, it
-        should redirect to a page to attach an existing category and inform
-        user that category was not found.
+        should redirect to a page to create a new category and inform user that
+        category was not found.
         """
         self.data['category_create'] = 'false'
         self.data['category'] = self.category.id + 123
