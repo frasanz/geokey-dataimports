@@ -13,8 +13,43 @@ class ToClassNameTest(TestCase):
     def test_filter(self):
         """Test filter."""
         self.assertEqual(
+            di_tags.to_class_name(DataImportFactory.create()),
+            'DataImport'
+        )
+        self.assertEqual(
             di_tags.to_class_name(DataFeatureFactory.create()),
             'DataFeature'
+        )
+
+
+class ToFieldNameTest(TestCase):
+    """Test to_field_name filter."""
+
+    def test_filter(self):
+        """Test filter."""
+        self.assertEqual(
+            di_tags.to_field_name('TextField'), 'Text'
+        )
+        self.assertEqual(
+            di_tags.to_field_name('NumericField'), 'Numeric'
+        )
+        self.assertEqual(
+            di_tags.to_field_name('DateTimeField'), 'Date and Time'
+        )
+        self.assertEqual(
+            di_tags.to_field_name('DateField'), 'Date'
+        )
+        self.assertEqual(
+            di_tags.to_field_name('TimeField'), 'Time'
+        )
+        self.assertEqual(
+            di_tags.to_field_name('LookupField'), 'Select box'
+        )
+        self.assertEqual(
+            di_tags.to_field_name('MultipleLookupField'), 'Multiple select'
+        )
+        self.assertEqual(
+            di_tags.to_field_name('NonExistingField'), 'NonExistingField'
         )
 
 

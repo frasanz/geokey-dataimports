@@ -25,6 +25,37 @@ def to_class_name(object):
 
 
 @register.filter
+def to_field_name(name):
+    """
+    Return a human readable field name (used on GeoKey).
+
+    Parameters
+    ----------
+    name : str
+        Field class name.
+
+    Returns
+    -------
+    str
+        Human readable field name.
+    """
+    fields = {
+        'TextField': 'Text',
+        'NumericField': 'Numeric',
+        'DateTimeField': 'Date and Time',
+        'DateField': 'Date',
+        'TimeField': 'Time',
+        'LookupField': 'Select box',
+        'MultipleLookupField': 'Multiple select'
+    }
+
+    if name in fields:
+        name = fields[name]
+
+    return name
+
+
+@register.filter
 def subtract(minuend, subtrahend):
     """
     Subtract subtrahend from minuend.
