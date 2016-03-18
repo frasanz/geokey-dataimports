@@ -363,11 +363,6 @@ class SingleDataImportPage(DataImportContext, FormView):
                     self.request,
                     'The data import has been updated.'
                 )
-                return redirect(
-                    'geokey_dataimports:single_dataimport',
-                    project_id=project.id,
-                    dataimport_id=form.instance.id
-                )
 
         return self.render_to_response(context)
 
