@@ -149,7 +149,8 @@ class AddDataImportPage(LoginRequiredMixin, ProjectContext, CreateView):
                             )
                             messages.success(
                                 self.request,
-                                'The data import has been added.'
+                                'The data import has been added and the '
+                                'category has been selected.'
                             )
                         except Category.DoesNotExist:
                             messages.error(
@@ -160,8 +161,7 @@ class AddDataImportPage(LoginRequiredMixin, ProjectContext, CreateView):
                     else:
                         messages.success(
                             self.request,
-                            'The data import has been added. Please create a '
-                            'new category in order to import data.'
+                            'The data import has been added.'
                         )
 
                     return super(AddDataImportPage, self).form_valid(form)
@@ -312,8 +312,12 @@ class SingleDataImportPage(DataImportContext, FormView):
 
         Returns
         -------
+        django.http.HttpResponseRedirect
+            Redirects to a single data import when form is saved, assign fields
+            page when category is selected, create category page when category
+            does not exist.
         django.http.HttpResponse
-            Rendered template.
+            Rendered template if project or data import does not exist.
         """
         context = self.get_context_data(form=form)
         project = context.get('project')
@@ -325,15 +329,23 @@ class SingleDataImportPage(DataImportContext, FormView):
                     'The project is locked. Data imports cannot be updated.'
                 )
             else:
+                form.save()
+
                 if not form.instance.category:
                     try:
                         form.instance.category = project.categories.get(
                             pk=self.request.POST.get('category')
                         )
+                        form.save()
+
                         messages.success(
                             self.request,
-                            'The category has been associated with the data '
-                            'import. Category fields can now be assigned.'
+                            'The category has been selected.'
+                        )
+                        return redirect(
+                            'geokey_dataimports:dataimport_assign_fields',
+                            project_id=project.id,
+                            dataimport_id=form.instance.id
                         )
                     except Category.DoesNotExist:
                         messages.error(
@@ -341,14 +353,21 @@ class SingleDataImportPage(DataImportContext, FormView):
                             'The category does not exist. Please create a '
                             'new category.'
                         )
-                else:
-                    messages.success(
-                        self.request,
-                        'The data import has been updated.'
-                    )
-                form.save()
+                        return redirect(
+                            'geokey_dataimports:dataimport_create_category',
+                            project_id=project.id,
+                            dataimport_id=form.instance.id
+                        )
 
-                return super(SingleDataImportPage, self).form_valid(form)
+                messages.success(
+                    self.request,
+                    'The data import has been updated.'
+                )
+                return redirect(
+                    'geokey_dataimports:single_dataimport',
+                    project_id=project.id,
+                    dataimport_id=form.instance.id
+                )
 
         return self.render_to_response(context)
 
@@ -368,23 +387,6 @@ class SingleDataImportPage(DataImportContext, FormView):
         """
         messages.error(self.request, 'An error occurred.')
         return self.render_to_response(self.get_context_data(form=form))
-
-    def get_success_url(self):
-        """
-        Set URL redirection when data import updated successfully.
-
-        Returns
-        -------
-        str
-            URL for redirection.
-        """
-        return reverse(
-            'geokey_dataimports:single_dataimport',
-            kwargs={
-                'project_id': self.kwargs['project_id'],
-                'dataimport_id': self.kwargs['dataimport_id']
-            }
-        )
 
 
 class DataImportCreateCategoryPage(DataImportContext, CreateView):
@@ -485,7 +487,6 @@ class DataImportCreateCategoryPage(DataImportContext, CreateView):
                     self.request,
                     'The category has been created.'
                 )
-
                 return redirect(
                     'geokey_dataimports:single_dataimport',
                     project_id=dataimport.project.id,
