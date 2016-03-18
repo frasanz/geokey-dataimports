@@ -34,42 +34,40 @@ data-dataimport-id="{{ dataimport.id }}"
                 {% if form.errors.description %}<span class="help-block">{{ form.errors.description|striptags }}</span>{% endif %}
             </div>
 
-            {% if dataimport.datafields.count > 0 %}
-                <h4>Fields</h4>
+            <h4>Fields</h4>
 
-                <table class="table">
-                    <thead>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th><input type="checkbox" class="toggle" checked /></th>
+                        <th>Name</th>
+                        <th>Field type</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for datafield in dataimport.datafields.all %}
                         <tr>
-                            <th><input type="checkbox" class="toggle" checked /></th>
-                            <th>Name</th>
-                            <th>Field type</th>
+                            <td>
+                                <input type="checkbox" name="ids" value="{{ datafield.id }}" checked />
+                            </td>
+
+                            <td class="form-group">
+                                <input type="text" name="fieldname_{{ datafield.id }}" class="form-control" value="{{ datafield.name }}" required />
+                            </td>
+
+                            <td class="form-group">
+                                <select name="fieldtype_{{ datafield.id }}" class="form-control" required>
+                                    <option value="">Please select a value</option>
+                                    {% for type in datafield.types %}
+                                        <option value="{{ type }}">{{ type|to_field_name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </td>
                         </tr>
-                    </thead>
-
-                    <tbody>
-                        {% for datafield in dataimport.datafields.all %}
-                            <tr>
-                                <td>
-                                    <input type="checkbox" name="ids" value="{{ datafield.id }}" checked />
-                                </td>
-
-                                <td class="form-group">
-                                    <input type="text" name="fieldname_{{ datafield.id }}" class="form-control" value="{{ datafield.name }}" required />
-                                </td>
-
-                                <td class="form-group">
-                                    <select name="fieldtype_{{ datafield.id }}" class="form-control" required>
-                                        <option value="">Please select a value</option>
-                                        {% for type in datafield.types %}
-                                            <option value="{{ type }}">{{ type|to_field_name }}</option>
-                                        {% endfor %}
-                                    </select>
-                                </td>
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            {% endif %}
+                    {% endfor %}
+                </tbody>
+            </table>
 
             <div class="form-group">
                 <button type="submit" class="btn btn-primary">Save</button>
