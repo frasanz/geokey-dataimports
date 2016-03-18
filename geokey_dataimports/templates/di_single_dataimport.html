@@ -23,13 +23,13 @@ data-dataimport-id="{{ dataimport.id }}"
 
                 {% if not dataimport.category %}
                     <div class="panel-body alert alert-warning" style="margin-bottom: 0px">
-                        <p>It looks like the data import does not have a category associated with it. Data cannot be imported.</p>
+                        <p>It looks like the data import does not have a category selected. Data cannot be imported.</p>
                         <p>Please select an existing category from the list provided or <a href="{% url 'geokey_dataimports:dataimport_create_category' project.id dataimport.id %}">create a new category</a>.</p>
                     </div>
-                {% elif dataimport.datafields.count != 0 %}
+                {% elif not dataimport.keys %}
                     <div class="panel-body alert alert-warning" style="margin-bottom: 0px">
-                        <p>It looks like the category has been associated, but all the required fields were not attached properly. Data cannot be imported.</p>
-                        <p>Please <a href="{% url 'geokey_dataimports:dataimport_assign_fields' project.id dataimport.id %}">assign fields</a> correctly.</p>
+                        <p>It looks like the category has been selected, but all the required fields were not assigned properly. Data cannot be imported.</p>
+                        <p>Please <a href="{% url 'geokey_dataimports:dataimport_assign_fields' project.id dataimport.id %}">assign fields</a>.</p>
                     </div>
                 {% else %}
                     <div id="statistics" class="panel-body">

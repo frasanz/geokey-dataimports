@@ -41,9 +41,9 @@ data-project-locked="{{ project.islocked }}"
                             {% elif not dataimport.category %}
                                 <span>/</span>
                                 <span class="text-warning">No category selected</span>
-                            {% elif dataimport.datafields.count != 0 %}
+                            {% elif not dataimport.keys %}
                                 <span>/</span>
-                                <span class="text-warning">Fields not set</span>
+                                <span class="text-warning">Fields not assigned</span>
                             {% endif %}
                         </p>
 
