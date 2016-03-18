@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load di_tags %}
 
 {% block bodydata %}
 data-project-id="{{ project.id }}"
@@ -60,7 +61,7 @@ data-dataimport-id="{{ dataimport.id }}"
                                     <select name="fieldtype_{{ datafield.id }}" class="form-control" required>
                                         <option value="">Please select a value</option>
                                         {% for type in datafield.types %}
-                                            <option value="{{ type }}">{{ type }}</option>
+                                            <option value="{{ type }}">{{ type|to_field_name }}</option>
                                         {% endfor %}
                                     </select>
                                 </td>
