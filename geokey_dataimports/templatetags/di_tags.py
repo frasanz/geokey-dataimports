@@ -7,6 +7,24 @@ register = template.Library()
 
 
 @register.filter
+def to_class_name(object):
+    """
+    Return class name of an object.
+
+    Parameters
+    ----------
+    object : obj
+        An object.
+
+    Returns
+    -------
+    str
+        A class name of an object.
+    """
+    return object.__class__.__name__
+
+
+@register.filter
 def subtract(minuend, subtrahend):
     """
     Subtract subtrahend from minuend.
