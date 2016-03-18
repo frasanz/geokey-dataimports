@@ -8,7 +8,7 @@ from .views import (
     AddDataImportPage,
     SingleDataImportPage,
     DataImportCreateCategoryPage,
-    DataImportAttachCategoryPage,
+    DataImportAssignFieldsPage,
     RemoveDataImportPage
 )
 
@@ -44,9 +44,9 @@ urlpatterns = [
         name='dataimport_create_category'),
     url(
         r'^admin/projects/(?P<project_id>[0-9]+)/'
-        r'dataimports/(?P<dataimport_id>[0-9]+)/attach-category/$',
-        DataImportAttachCategoryPage.as_view(),
-        name='dataimport_attach_category'),
+        r'dataimports/(?P<dataimport_id>[0-9]+)/assign-fields/$',
+        DataImportAssignFieldsPage.as_view(),
+        name='dataimport_assign_fields'),
     url(
         r'^admin/projects/(?P<project_id>[0-9]+)/'
         r'dataimports/(?P<dataimport_id>[0-9]+)/remove/$',

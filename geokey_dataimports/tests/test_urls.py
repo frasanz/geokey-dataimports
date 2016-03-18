@@ -9,7 +9,7 @@ from ..views import (
     AddDataImportPage,
     SingleDataImportPage,
     DataImportCreateCategoryPage,
-    DataImportAttachCategoryPage,
+    DataImportAssignFieldsPage,
     RemoveDataImportPage
 )
 
@@ -106,25 +106,25 @@ class UrlsTest(TestCase):
         self.assertEqual(int(resolved_url.kwargs['project_id']), 1)
         self.assertEqual(int(resolved_url.kwargs['dataimport_id']), 5)
 
-    def test_data_import_attach_category_page_reverse(self):
-        """Test reverser for data import attaching category page."""
+    def test_data_import_assign_fields_page_reverse(self):
+        """Test reverser for data import assigning fields page."""
         reversed_url = reverse(
-            'geokey_dataimports:dataimport_attach_category',
+            'geokey_dataimports:dataimport_assign_fields',
             kwargs={'project_id': 1, 'dataimport_id': 5}
         )
         self.assertEqual(
             reversed_url,
-            '/admin/projects/1/dataimports/5/attach-category/'
+            '/admin/projects/1/dataimports/5/assign-fields/'
         )
 
-    def test_data_import_attach_category_page_resolve(self):
-        """Test resolver for data import attaching category page."""
+    def test_data_import_assign_fields_page_resolve(self):
+        """Test resolver for data import assigning fields page."""
         resolved_url = resolve(
-            '/admin/projects/1/dataimports/5/attach-category/'
+            '/admin/projects/1/dataimports/5/assign-fields/'
         )
         self.assertEqual(
             resolved_url.func.__name__,
-            DataImportAttachCategoryPage.__name__
+            DataImportAssignFieldsPage.__name__
         )
         self.assertEqual(int(resolved_url.kwargs['project_id']), 1)
         self.assertEqual(int(resolved_url.kwargs['dataimport_id']), 5)

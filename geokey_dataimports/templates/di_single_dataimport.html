@@ -29,7 +29,7 @@ data-dataimport-id="{{ dataimport.id }}"
                 {% elif dataimport.datafields.count != 0 %}
                     <div class="panel-body alert alert-warning" style="margin-bottom: 0px">
                         <p>It looks like the category has been associated, but all the required fields were not attached properly. Data cannot be imported.</p>
-                        <p>Please <a href="{% url 'geokey_dataimports:dataimport_attach_category' project.id dataimport.id %}">attach the category</a> correctly.</p>
+                        <p>Please <a href="{% url 'geokey_dataimports:dataimport_assign_fields' project.id dataimport.id %}">assign fields</a> correctly.</p>
                     </div>
                 {% else %}
                     <div id="statistics" class="panel-body">

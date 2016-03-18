@@ -196,7 +196,7 @@ class AddDataImportPage(LoginRequiredMixin, ProjectContext, CreateView):
         """
         if self.object.category:
             return reverse(
-                'geokey_dataimports:dataimport_attach_category',
+                'geokey_dataimports:dataimport_assign_fields',
                 kwargs={
                     'project_id': self.kwargs['project_id'],
                     'dataimport_id': self.object.id
@@ -333,7 +333,7 @@ class SingleDataImportPage(DataImportContext, FormView):
                         messages.success(
                             self.request,
                             'The category has been associated with the data '
-                            'import. Category fields can now be attached.'
+                            'import. Category fields can now be assigned.'
                         )
                     except Category.DoesNotExist:
                         messages.error(
@@ -426,8 +426,12 @@ class DataImportCreateCategoryPage(DataImportContext, CreateView):
 
         Returns
         -------
+        django.http.HttpResponseRedirect
+            Redirects to a single data import when category is created.
         django.http.HttpResponse
-            Rendered template.
+            Rendered template if project or data import does not exist, project
+            is locked, data import already has a category associated with it,
+            fields already have been assigned.
         """
         data = self.request.POST
         context = self.get_context_data(form=form)
@@ -439,45 +443,48 @@ class DataImportCreateCategoryPage(DataImportContext, CreateView):
                     self.request,
                     'The project is locked. New categories cannot be created.'
                 )
+            elif dataimport.category:
+                messages.error(
+                    self.request,
+                    'The data import already has a category associated with '
+                    'it. Unfortunately, this cannot be changed.'
+                )
+            elif dataimport.keys:
+                messages.error(
+                    self.request,
+                    'The fields have already been assigned. Unfortunately, '
+                    'this cannot be changed.'
+                )
             else:
-                if dataimport.category:
-                    messages.error(
-                        self.request,
-                        'The data import already has a category associated '
-                        'with it. Unfortunately, this cannot be changed.'
-                    )
-                else:
-                    category = Category.objects.create(
-                        name=form.instance.name,
-                        description=form.instance.description,
-                        project=dataimport.project,
-                        creator=self.request.user
-                    )
+                category = Category.objects.create(
+                    name=form.instance.name,
+                    description=form.instance.description,
+                    project=dataimport.project,
+                    creator=self.request.user
+                )
 
-                    datafields = dataimport.datafields.all()
-                    ids = data.getlist('ids')
-                    keys = []
+                ids = data.getlist('ids')
+                keys = []
 
-                    if ids:
-                        for datafield in datafields.filter(id__in=ids):
-                            Field.create(
-                                data.get('fieldname_%s' % datafield.id),
-                                datafield.key,
-                                '', False,
-                                category,
-                                data.get('fieldtype_%s' % datafield.id)
-                            )
-                            keys.append(datafield.key)
+                if ids:
+                    for datafield in dataimport.datafields.filter(id__in=ids):
+                        Field.create(
+                            data.get('fieldname_%s' % datafield.id),
+                            datafield.key,
+                            '', False,
+                            category,
+                            data.get('fieldtype_%s' % datafield.id)
+                        )
+                        keys.append(datafield.key)
 
-                    dataimport.category = category
-                    dataimport.keys = keys
-                    dataimport.save()
-                    datafields.delete()
+                dataimport.category = category
+                dataimport.keys = keys
+                dataimport.save()
 
-                    messages.success(
-                        self.request,
-                        'The category has been created.'
-                    )
+                messages.success(
+                    self.request,
+                    'The category has been created.'
+                )
 
                 return redirect(
                     'geokey_dataimports:single_dataimport',
@@ -505,10 +512,100 @@ class DataImportCreateCategoryPage(DataImportContext, CreateView):
         return self.render_to_response(self.get_context_data(form=form))
 
 
-class DataImportAttachCategoryPage(TemplateView):
-    """Attach category for data import page."""
+class DataImportAssignFieldsPage(DataImportContext, TemplateView):
+    """Assign fields for data import page."""
 
-    template_name = 'di_attach_category.html'
+    template_name = 'di_assign_fields.html'
+
+    def post(self, request, project_id, dataimport_id):
+        """
+        POST method for assigning fields.
+
+        Parameters
+        ----------
+        request : django.http.HttpRequest
+            Object representing the request.
+        project_id : int
+            Identifies the project in the database.
+        dataimport_id : int
+            Identifies the data import in the database.
+
+        Returns
+        -------
+        django.http.HttpResponseRedirect
+            Redirects to a single data import when fields are assigned.
+        django.http.HttpResponse
+            Rendered template if project or data import does not exist, project
+            is locked, data import already has no category associated with it,
+            fields already have been assigned.
+        """
+        data = self.request.POST
+        context = self.get_context_data(project_id, dataimport_id)
+        dataimport = context.get('dataimport')
+
+        if dataimport:
+            if dataimport.project.islocked:
+                messages.error(
+                    request,
+                    'The project is locked. Fields cannot be assigned.'
+                )
+            elif not dataimport.category:
+                messages.error(
+                    request,
+                    'The data import has not category associated with it.'
+                )
+            elif dataimport.keys:
+                messages.error(
+                    request,
+                    'Fields have already been assigned.'
+                )
+            else:
+                ids = data.getlist('ids')
+                keys = []
+                changed_keys = {}
+
+                if ids:
+                    for datafield in dataimport.datafields.filter(id__in=ids):
+                        field_key = data.get('existingfield_%s' % datafield.id)
+
+                        if field_key:
+                            changed_keys[datafield.key] = field_key
+                            keys.append(field_key)
+                        else:
+                            Field.create(
+                                data.get('fieldname_%s' % datafield.id),
+                                datafield.key,
+                                '', False,
+                                dataimport.category,
+                                data.get('fieldtype_%s' % datafield.id)
+                            )
+                            keys.append(datafield.key)
+
+                    for datafeature in dataimport.datafeatures.all():
+                        properties = datafeature.properties
+
+                        for old_key, new_key in changed_keys.iteritems():
+                            if old_key in properties:
+                                properties[new_key] = properties.pop(old_key)
+
+                        datafeature.properties = properties
+                        datafeature.save()
+
+                dataimport.keys = keys
+                dataimport.save()
+
+                messages.success(
+                    self.request,
+                    'The fields have been assigned.'
+                )
+
+                return redirect(
+                    'geokey_dataimports:single_dataimport',
+                    project_id=dataimport.project.id,
+                    dataimport_id=dataimport.id
+                )
+
+        return self.render_to_response(context)
 
 
 class RemoveDataImportPage(DataImportContext, TemplateView):
