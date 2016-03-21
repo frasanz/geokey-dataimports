@@ -677,6 +677,27 @@ class AddDataImportPageTest(TestCase):
         self.assertEqual(DataField.objects.count(), 3)
         self.assertEqual(DataFeature.objects.count(), 3)
 
+    def test_post_when_wrong_data(self):
+        """
+        Test POST with with admin, when data is wrong.
+
+        It should inform user that data is wrong.
+        """
+        self.data['name'] = ''
+        request = self.factory.post(self.url, self.data)
+        request.user = self.admin
+
+        setattr(request, 'session', 'session')
+        messages = FallbackStorage(request)
+        setattr(request, '_messages', messages)
+
+        response = self.view(request, project_id=self.project.id).render()
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(DataImport.objects.count(), 0)
+        self.assertEqual(DataField.objects.count(), 0)
+        self.assertEqual(DataFeature.objects.count(), 0)
+
     def test_post_when_no_project(self):
         """
         Test POST with with admin, when project does not exist.
@@ -1210,6 +1231,50 @@ class SingleDataImportPageTest(TestCase):
         reference = DataImport.objects.get(pk=self.dataimport.id)
         self.assertEqual(reference.name, self.data.get('name'))
         self.assertEqual(reference.description, self.data.get('description'))
+
+    def test_post_when_wrong_data(self):
+        """
+        Test POST with with admin, when data is wrong.
+
+        It should inform user that data is wrong.
+        """
+        self.data['name'] = ''
+        request = self.factory.post(self.url, self.data)
+        request.user = self.admin
+
+        setattr(request, 'session', 'session')
+        messages = FallbackStorage(request)
+        setattr(request, '_messages', messages)
+
+        response = self.view(
+            request,
+            project_id=self.project.id,
+            dataimport_id=self.dataimport.id
+        ).render()
+
+        form = DataImportForm(data=self.data)
+        rendered = render_to_string(
+            'di_single_dataimport.html',
+            {
+                'GEOKEY_VERSION': version.get_version(),
+                'PLATFORM_NAME': get_current_site(request).name,
+                'user': request.user,
+                'messages': get_messages(request),
+                'form': form,
+                'project': self.project,
+                'dataimport': self.dataimport
+            }
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            render_helpers.remove_csrf(response.content.decode('utf-8')),
+            rendered
+        )
+
+        reference = DataImport.objects.get(pk=self.dataimport.id)
+        self.assertEqual(reference.name, self.dataimport.name)
+        self.assertEqual(reference.description, self.dataimport.description)
 
     def test_post_when_no_project(self):
         """
