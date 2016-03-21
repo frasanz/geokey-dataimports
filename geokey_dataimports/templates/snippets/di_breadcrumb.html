@@ -15,6 +15,12 @@
                 <li>
                     <a href="{% url 'geokey_dataimports:single_dataimport' project.id dataimport.id %}">Data import settings</a>
                 </li>
+
+                {% if feature %}
+                    <li>
+                        <a href="{% url 'geokey_dataimports:dataimport_all_datafeatures' project.id dataimport.id %}">Data features</a>
+                    </li>
+                {% endif %}
             {% endif %}
         {% endif %}
 
@@ -26,6 +32,10 @@
             <li class="active">Create category</li>
         {% elif request.resolver_match.url_name == 'dataimport_assign_fields' %}
             <li class="active">Assign fields</li>
+        {% elif request.resolver_match.url_name == 'dataimport_all_datafeatures' %}
+            <li class="active">Data features</li>
+        {% elif request.resolver_match.url_name == 'dataimport_single_datafeature' %}
+            <li class="active">Edit data feature</li>
         {% endif %}
     </ol>
 {% endif %}

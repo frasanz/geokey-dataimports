@@ -602,14 +602,14 @@ class DataImportAssignFieldsPage(DataImportContext, TemplateView):
         return self.render_to_response(context)
 
 
-class DataImportAllFeaturesPage(DataImportContext, TemplateView):
-    """Data import all features page."""
+class DataImportAllDataFeaturesPage(DataImportContext, TemplateView):
+    """Data import all data features page."""
 
     template_name = 'base.html'
 
 
-class DataImportSingleFeaturePage(DataImportContext, TemplateView):
-    """Data import single feature page."""
+class DataImportSingleDataFeaturePage(DataImportContext, TemplateView):
+    """Data import single data feature page."""
 
     template_name = 'base.html'
 

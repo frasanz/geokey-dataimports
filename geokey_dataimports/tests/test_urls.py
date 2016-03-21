@@ -10,8 +10,8 @@ from ..views import (
     SingleDataImportPage,
     DataImportCreateCategoryPage,
     DataImportAssignFieldsPage,
-    DataImportAllFeaturesPage,
-    DataImportSingleFeaturePage,
+    DataImportAllDataFeaturesPage,
+    DataImportSingleDataFeaturePage,
     RemoveDataImportPage
 )
 
@@ -131,50 +131,50 @@ class UrlsTest(TestCase):
         self.assertEqual(int(resolved_url.kwargs['project_id']), 1)
         self.assertEqual(int(resolved_url.kwargs['dataimport_id']), 5)
 
-    def test_data_import_all_features_page_reverse(self):
-        """Test reverser for data import all features page."""
+    def test_data_import_all_datadeatures_page_reverse(self):
+        """Test reverser for data import all data features page."""
         reversed_url = reverse(
-            'geokey_dataimports:dataimport_all_features',
+            'geokey_dataimports:dataimport_all_datafeatures',
             kwargs={'project_id': 1, 'dataimport_id': 5}
         )
         self.assertEqual(
             reversed_url,
-            '/admin/projects/1/dataimports/5/features/'
+            '/admin/projects/1/dataimports/5/datafeatures/'
         )
 
-    def test_data_import_all_features_page_resolve(self):
-        """Test resolver for data import all features page."""
-        resolved_url = resolve('/admin/projects/1/dataimports/5/features/')
+    def test_data_import_all_datafeatures_page_resolve(self):
+        """Test resolver for data import all data features page."""
+        resolved_url = resolve('/admin/projects/1/dataimports/5/datafeatures/')
         self.assertEqual(
             resolved_url.func.__name__,
-            DataImportAllFeaturesPage.__name__
+            DataImportAllDataFeaturesPage.__name__
         )
         self.assertEqual(int(resolved_url.kwargs['project_id']), 1)
         self.assertEqual(int(resolved_url.kwargs['dataimport_id']), 5)
 
-    def test_data_import_single_feature_page_reverse(self):
-        """Test reverser for data import single feature page."""
+    def test_data_import_single_data_feature_page_reverse(self):
+        """Test reverser for data import single data feature page."""
         reversed_url = reverse(
-            'geokey_dataimports:dataimport_single_feature',
-            kwargs={'project_id': 1, 'dataimport_id': 5, 'feature_id': 8}
+            'geokey_dataimports:dataimport_single_datafeature',
+            kwargs={'project_id': 1, 'dataimport_id': 5, 'datafeature_id': 8}
         )
         self.assertEqual(
             reversed_url,
-            '/admin/projects/1/dataimports/5/features/8/'
+            '/admin/projects/1/dataimports/5/datafeatures/8/'
         )
 
-    def test_data_import_single_feature_page_resolve(self):
-        """Test resolver for data import single feature page."""
+    def test_data_import_single_datafeature_page_resolve(self):
+        """Test resolver for data import single data feature page."""
         resolved_url = resolve(
-            '/admin/projects/1/dataimports/5/features/8/'
+            '/admin/projects/1/dataimports/5/datafeatures/8/'
         )
         self.assertEqual(
             resolved_url.func.__name__,
-            DataImportSingleFeaturePage.__name__
+            DataImportSingleDataFeaturePage.__name__
         )
         self.assertEqual(int(resolved_url.kwargs['project_id']), 1)
         self.assertEqual(int(resolved_url.kwargs['dataimport_id']), 5)
-        self.assertEqual(int(resolved_url.kwargs['feature_id']), 8)
+        self.assertEqual(int(resolved_url.kwargs['datafeature_id']), 8)
 
     def test_remove_data_import_page_reverse(self):
         """Test reverser for removing data import page."""
