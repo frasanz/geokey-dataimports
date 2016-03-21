@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+
+{% block bodydata %}
+data-project-id="{{ project.id }}"
+data-project-locked="{{ project.islocked }}"
+data-dataimport-id="{{ dataimport.id }}"
+{% endblock %}
+
+{% block title %} | Project: {{ project.name }} - Data import: {{ dataimport.name }} - Data features{% endblock %}
+
+{% block main %}
+{% include 'snippets/di_header.html' %}
+
+<div class="container">
+    <div class="row">
+        <div class="col-md-12">
+            <h3 class="header">
+                {% if project.islocked %}<span class="glyphicon glyphicon-lock text-warning" aria-hidden="true"></span>{% endif %}
+                <span>Data imports</span>
+
+                {% if project.dataimports.all and not project.islocked %}
+                    <a role="button" href="{% url 'geokey_dataimports:dataimport_add' project.id %}" class="btn btn-sm btn-success pull-right">
+                        <span class="glyphicon glyphicon-plus"></span>
+                        <span></span>
+                    </a>
+                {% endif %}
+            </h3>
+        </div>
+    </div>
+</div>
+{% endblock %}
