@@ -48,7 +48,7 @@ deploy:
   provider: pypi
   user: excites
   password:
-    secure:
+    secure: XW5YgDb645Tnue/rl5xH/+P8gzq+ssKV746wEXAfCMZTJGvLXOR2uc1Or3q2j/fbmOrDSxOECJjCcfbsP5v8IrybtZ5ux014ebgqHjBaDrPN1n3ooTnnV3e5MNiZ2Vc+TL/Voypq/G7g384pt6QlOdBt51S/0kUzWvlHBRDQcMWcs8sU5WsBVpB/MBzuC2AmSfrPa0fZp5ua7tqLUdpt5eH9xt9kxWAqpE5WdSZMHeZF2kMyIFIK7S+Vy5IboU70yrc700WU2IAFSuenJSj3QqBhGzmDfovvSHCanMn9BKR1rFOFBOZJLTE8Vh5nlqkwlxPPLH+ytp6DQvEC6yKV6SwGwm7Bdgwl+ZJw9I2m5x43kck5oh9mjrfXrJyvl2TtwFV1ShDqX3NLJakzohQhq79TmutkZLzjhE3FUVsHOFtqogSEqGKK3fx9UTsKiDqrkBV7jETAcy66u65xrXuKwwNmQOVZhitzKy9kilwJ7y+QR9ScLybjxI3HPp0bWrDHmmM2YDAMKLzvn7Fo+ffDDttXIfLxVIyog6WG9HE+WFrfjdXf6hZ8FhCmqIv7K9/RdWMxcgQk6KR4DMabOhgDKbMdyEOiQTXSi9r3SfzXclBbajGXsgbEWlAOcdkMuJ0Yhbta4jehGIPQqxUTMFqaeZG9WS1aUuUNB2RANpdLJBk=
   on:
     tags: true
     branch: master
