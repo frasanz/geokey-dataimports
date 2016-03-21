@@ -3,12 +3,18 @@
 from django.test import TestCase
 
 from .model_factories import DataImportFactory, DataFeatureFactory
-from ..models import DataFeature
+from ..models import DataImport, DataFeature
 from ..templatetags import di_tags
 
 
 class ToClassNameTest(TestCase):
     """Test to_class_name filter."""
+
+    def tearDown(self):
+        """Tear down test."""
+        for dataimport in DataImport.objects.all():
+            if dataimport.file:
+                dataimport.file.delete()
 
     def test_filter(self):
         """Test filter."""
@@ -63,6 +69,12 @@ class SubtractTest(TestCase):
 
 class FilterImportedTest(TestCase):
     """Test filter_imported filter."""
+
+    def tearDown(self):
+        """Tear down test."""
+        for dataimport in DataImport.objects.all():
+            if dataimport.file:
+                dataimport.file.delete()
 
     def test_filter(self):
         """Test filter."""
