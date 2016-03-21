@@ -19,10 +19,10 @@ from geokey.projects.tests.model_factories import ProjectFactory
 from geokey.categories.tests.model_factories import CategoryFactory
 
 from .helpers import file_helpers
-from ..helpers.context_helpers import does_not_exist_msg
 from .model_factories import DataImportFactory
+from ..helpers.context_helpers import does_not_exist_msg
 from ..models import DataImport, DataField, DataFeature
-from ..forms import DataImportForm
+from ..forms import CategoryForm, DataImportForm
 from ..views import (
     IndexPage,
     AllDataImportsPage,
@@ -1522,7 +1522,7 @@ class DataImportCreateCategoryPageTest(TestCase):
             dataimport_id=self.dataimport.id
         ).render()
 
-        form = DataImportForm()
+        form = CategoryForm()
         rendered = render_to_string(
             'di_create_category.html',
             {
@@ -1557,7 +1557,7 @@ class DataImportCreateCategoryPageTest(TestCase):
             dataimport_id=self.dataimport.id
         ).render()
 
-        form = DataImportForm()
+        form = CategoryForm()
         rendered = render_to_string(
             'di_create_category.html',
             {
@@ -1591,7 +1591,7 @@ class DataImportCreateCategoryPageTest(TestCase):
             dataimport_id=self.dataimport.id
         ).render()
 
-        form = DataImportForm()
+        form = CategoryForm()
         rendered = render_to_string(
             'di_create_category.html',
             {
@@ -1625,7 +1625,7 @@ class DataImportCreateCategoryPageTest(TestCase):
             dataimport_id=self.dataimport.id
         ).render()
 
-        form = DataImportForm()
+        form = CategoryForm()
         rendered = render_to_string(
             'di_create_category.html',
             {
@@ -1659,7 +1659,7 @@ class DataImportCreateCategoryPageTest(TestCase):
             dataimport_id=self.dataimport.id + 123
         ).render()
 
-        form = DataImportForm()
+        form = CategoryForm()
         rendered = render_to_string(
             'di_create_category.html',
             {
@@ -1678,6 +1678,252 @@ class DataImportCreateCategoryPageTest(TestCase):
             render_helpers.remove_csrf(response.content.decode('utf-8')),
             rendered
         )
+
+    def test_post_with_anonymous(self):
+        """
+        Test POST with with anonymous.
+
+        It should redirect to login page.
+        """
+        request = self.factory.post(self.url, self.data)
+        request.user = AnonymousUser()
+
+        setattr(request, 'session', 'session')
+        messages = FallbackStorage(request)
+        setattr(request, '_messages', messages)
+
+        response = self.view(
+            request,
+            project_id=self.project.id,
+            dataimport_id=self.dataimport.id
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('/admin/account/login/', response['location'])
+
+        reference = DataImport.objects.get(pk=self.dataimport.id)
+        self.assertIsNone(reference.category)
+        self.assertIsNone(reference.keys)
+
+    def test_post_with_user(self):
+        """
+        Test POST with with user.
+
+        It should not allow to create category, when user is not an
+        administrator.
+        """
+        request = self.factory.post(self.url, self.data)
+        request.user = self.user
+
+        setattr(request, 'session', 'session')
+        messages = FallbackStorage(request)
+        setattr(request, '_messages', messages)
+
+        response = self.view(
+            request,
+            project_id=self.project.id,
+            dataimport_id=self.dataimport.id
+        ).render()
+
+        form = CategoryForm(data=self.data)
+        rendered = render_to_string(
+            'di_create_category.html',
+            {
+                'GEOKEY_VERSION': version.get_version(),
+                'PLATFORM_NAME': get_current_site(request).name,
+                'user': request.user,
+                'messages': get_messages(request),
+                'form': form,
+                'error': 'Not found.',
+                'error_description': does_not_exist_msg('Data import')
+            }
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            render_helpers.remove_csrf(response.content.decode('utf-8')),
+            rendered
+        )
+
+        reference = DataImport.objects.get(pk=self.dataimport.id)
+        self.assertIsNone(reference.category)
+        self.assertIsNone(reference.keys)
+
+    def test_post_with_contributor(self):
+        """
+        Test POST with with contributor.
+
+        It should not allow to create category, when user is not an
+        administrator.
+        """
+        request = self.factory.post(self.url, self.data)
+        request.user = self.contributor
+
+        setattr(request, 'session', 'session')
+        messages = FallbackStorage(request)
+        setattr(request, '_messages', messages)
+
+        response = self.view(
+            request,
+            project_id=self.project.id,
+            dataimport_id=self.dataimport.id
+        ).render()
+
+        form = CategoryForm(data=self.data)
+        rendered = render_to_string(
+            'di_create_category.html',
+            {
+                'GEOKEY_VERSION': version.get_version(),
+                'PLATFORM_NAME': get_current_site(request).name,
+                'user': request.user,
+                'messages': get_messages(request),
+                'form': form,
+                'error': 'Not found.',
+                'error_description': does_not_exist_msg('Data import')
+            }
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            render_helpers.remove_csrf(response.content.decode('utf-8')),
+            rendered
+        )
+
+        reference = DataImport.objects.get(pk=self.dataimport.id)
+        self.assertIsNone(reference.category)
+        self.assertIsNone(reference.keys)
+
+    def test_post_when_no_project(self):
+        """
+        Test POST with with admin, when project does not exist.
+
+        It should inform user that data import does not exist.
+        """
+        request = self.factory.post(self.url, self.data)
+        request.user = self.admin
+
+        setattr(request, 'session', 'session')
+        messages = FallbackStorage(request)
+        setattr(request, '_messages', messages)
+
+        response = self.view(
+            request,
+            project_id=self.project.id + 123,
+            dataimport_id=self.dataimport.id
+        ).render()
+
+        form = CategoryForm(data=self.data)
+        rendered = render_to_string(
+            'di_create_category.html',
+            {
+                'GEOKEY_VERSION': version.get_version(),
+                'PLATFORM_NAME': get_current_site(request).name,
+                'user': request.user,
+                'messages': get_messages(request),
+                'form': form,
+                'error': 'Not found.',
+                'error_description': does_not_exist_msg('Data import')
+            }
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            render_helpers.remove_csrf(response.content.decode('utf-8')),
+            rendered
+        )
+
+        reference = DataImport.objects.get(pk=self.dataimport.id)
+        self.assertIsNone(reference.category)
+        self.assertIsNone(reference.keys)
+
+    def test_post_when_no_dataimport(self):
+        """
+        Test POST with with admin, when data import does not exist.
+
+        It should inform user that data import does not exist.
+        """
+        request = self.factory.post(self.url, self.data)
+        request.user = self.admin
+
+        setattr(request, 'session', 'session')
+        messages = FallbackStorage(request)
+        setattr(request, '_messages', messages)
+
+        response = self.view(
+            request,
+            project_id=self.project.id,
+            dataimport_id=self.dataimport.id + 123
+        ).render()
+
+        form = CategoryForm(data=self.data)
+        rendered = render_to_string(
+            'di_create_category.html',
+            {
+                'GEOKEY_VERSION': version.get_version(),
+                'PLATFORM_NAME': get_current_site(request).name,
+                'user': request.user,
+                'messages': get_messages(request),
+                'form': form,
+                'error': 'Not found.',
+                'error_description': does_not_exist_msg('Data import')
+            }
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            render_helpers.remove_csrf(response.content.decode('utf-8')),
+            rendered
+        )
+
+        reference = DataImport.objects.get(pk=self.dataimport.id)
+        self.assertIsNone(reference.category)
+        self.assertIsNone(reference.keys)
+
+    def test_post_when_project_is_locked(self):
+        """
+        Test POST with with admin, when project is locked.
+
+        It should not create category, when project is locked.
+        """
+        self.project.islocked = True
+        self.project.save()
+
+        request = self.factory.post(self.url, self.data)
+        request.user = self.admin
+
+        setattr(request, 'session', 'session')
+        messages = FallbackStorage(request)
+        setattr(request, '_messages', messages)
+
+        response = self.view(
+            request,
+            project_id=self.project.id,
+            dataimport_id=self.dataimport.id
+        ).render()
+
+        form = CategoryForm(data=self.data)
+        rendered = render_to_string(
+            'di_create_category.html',
+            {
+                'GEOKEY_VERSION': version.get_version(),
+                'PLATFORM_NAME': get_current_site(self.request).name,
+                'user': request.user,
+                'messages': get_messages(request),
+                'form': form,
+                'project': self.project,
+                'dataimport': self.dataimport
+            }
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            render_helpers.remove_csrf(response.content.decode('utf-8')),
+            rendered
+        )
+
+        reference = DataImport.objects.get(pk=self.dataimport.id)
+        self.assertIsNone(reference.category)
+        self.assertIsNone(reference.keys)
 
 
 class DataImportAssignFieldsPageTest(TestCase):
@@ -1701,8 +1947,7 @@ class DataImportAssignFieldsPageTest(TestCase):
             project=self.project
         )
         self.dataimport = DataImportFactory.create(
-            project=self.project,
-            category=None
+            project=self.project
         )
 
         self.data = {}
@@ -1756,7 +2001,6 @@ class DataImportAssignFieldsPageTest(TestCase):
             dataimport_id=self.dataimport.id
         ).render()
 
-        form = DataImportForm()
         rendered = render_to_string(
             'di_assign_fields.html',
             {
@@ -1764,7 +2008,6 @@ class DataImportAssignFieldsPageTest(TestCase):
                 'PLATFORM_NAME': get_current_site(self.request).name,
                 'user': self.request.user,
                 'messages': get_messages(self.request),
-                'form': form,
                 'error': 'Not found.',
                 'error_description': does_not_exist_msg('Data import')
             }
@@ -1791,7 +2034,6 @@ class DataImportAssignFieldsPageTest(TestCase):
             dataimport_id=self.dataimport.id
         ).render()
 
-        form = DataImportForm()
         rendered = render_to_string(
             'di_assign_fields.html',
             {
@@ -1799,7 +2041,6 @@ class DataImportAssignFieldsPageTest(TestCase):
                 'PLATFORM_NAME': get_current_site(self.request).name,
                 'user': self.request.user,
                 'messages': get_messages(self.request),
-                'form': form,
                 'error': 'Not found.',
                 'error_description': does_not_exist_msg('Data import')
             }
@@ -1825,7 +2066,6 @@ class DataImportAssignFieldsPageTest(TestCase):
             dataimport_id=self.dataimport.id
         ).render()
 
-        form = DataImportForm()
         rendered = render_to_string(
             'di_assign_fields.html',
             {
@@ -1833,7 +2073,6 @@ class DataImportAssignFieldsPageTest(TestCase):
                 'PLATFORM_NAME': get_current_site(self.request).name,
                 'user': self.request.user,
                 'messages': get_messages(self.request),
-                'form': form,
                 'project': self.project,
                 'dataimport': self.dataimport
             }
@@ -1859,7 +2098,6 @@ class DataImportAssignFieldsPageTest(TestCase):
             dataimport_id=self.dataimport.id
         ).render()
 
-        form = DataImportForm()
         rendered = render_to_string(
             'di_assign_fields.html',
             {
@@ -1867,7 +2105,6 @@ class DataImportAssignFieldsPageTest(TestCase):
                 'PLATFORM_NAME': get_current_site(self.request).name,
                 'user': self.request.user,
                 'messages': get_messages(self.request),
-                'form': form,
                 'error': 'Not found.',
                 'error_description': does_not_exist_msg('Data import'),
             }
@@ -1893,7 +2130,6 @@ class DataImportAssignFieldsPageTest(TestCase):
             dataimport_id=self.dataimport.id + 123
         ).render()
 
-        form = DataImportForm()
         rendered = render_to_string(
             'di_assign_fields.html',
             {
@@ -1901,7 +2137,6 @@ class DataImportAssignFieldsPageTest(TestCase):
                 'PLATFORM_NAME': get_current_site(self.request).name,
                 'user': self.request.user,
                 'messages': get_messages(self.request),
-                'form': form,
                 'error': 'Not found.',
                 'error_description': does_not_exist_msg('Data import'),
             }
@@ -1912,6 +2147,279 @@ class DataImportAssignFieldsPageTest(TestCase):
             render_helpers.remove_csrf(response.content.decode('utf-8')),
             rendered
         )
+
+    def test_post_with_anonymous(self):
+        """
+        Test POST with with anonymous.
+
+        It should redirect to login page.
+        """
+        request = self.factory.post(self.url, self.data)
+        request.user = AnonymousUser()
+
+        setattr(request, 'session', 'session')
+        messages = FallbackStorage(request)
+        setattr(request, '_messages', messages)
+
+        response = self.view(
+            request,
+            project_id=self.project.id,
+            dataimport_id=self.dataimport.id
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('/admin/account/login/', response['location'])
+
+        reference = DataImport.objects.get(pk=self.dataimport.id)
+        self.assertIsNone(reference.keys)
+
+    def test_post_with_user(self):
+        """
+        Test POST with with user.
+
+        It should not allow to assign fields, when user is not an
+        administrator.
+        """
+        request = self.factory.post(self.url, self.data)
+        request.user = self.user
+
+        setattr(request, 'session', 'session')
+        messages = FallbackStorage(request)
+        setattr(request, '_messages', messages)
+
+        response = self.view(
+            request,
+            project_id=self.project.id,
+            dataimport_id=self.dataimport.id
+        ).render()
+
+        rendered = render_to_string(
+            'di_assign_fields.html',
+            {
+                'GEOKEY_VERSION': version.get_version(),
+                'PLATFORM_NAME': get_current_site(request).name,
+                'user': request.user,
+                'messages': get_messages(request),
+                'error': 'Not found.',
+                'error_description': does_not_exist_msg('Data import')
+            }
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            render_helpers.remove_csrf(response.content.decode('utf-8')),
+            rendered
+        )
+
+        reference = DataImport.objects.get(pk=self.dataimport.id)
+        self.assertIsNone(reference.keys)
+
+    def test_post_with_contributor(self):
+        """
+        Test POST with with contributor.
+
+        It should not allow to assign fields, when user is not an
+        administrator.
+        """
+        request = self.factory.post(self.url, self.data)
+        request.user = self.contributor
+
+        setattr(request, 'session', 'session')
+        messages = FallbackStorage(request)
+        setattr(request, '_messages', messages)
+
+        response = self.view(
+            request,
+            project_id=self.project.id,
+            dataimport_id=self.dataimport.id
+        ).render()
+
+        rendered = render_to_string(
+            'di_assign_fields.html',
+            {
+                'GEOKEY_VERSION': version.get_version(),
+                'PLATFORM_NAME': get_current_site(request).name,
+                'user': request.user,
+                'messages': get_messages(request),
+                'error': 'Not found.',
+                'error_description': does_not_exist_msg('Data import')
+            }
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            render_helpers.remove_csrf(response.content.decode('utf-8')),
+            rendered
+        )
+
+        reference = DataImport.objects.get(pk=self.dataimport.id)
+        self.assertIsNone(reference.keys)
+
+    def test_post_when_no_project(self):
+        """
+        Test POST with with admin, when project does not exist.
+
+        It should inform user that data import does not exist.
+        """
+        request = self.factory.post(self.url, self.data)
+        request.user = self.admin
+
+        setattr(request, 'session', 'session')
+        messages = FallbackStorage(request)
+        setattr(request, '_messages', messages)
+
+        response = self.view(
+            request,
+            project_id=self.project.id + 123,
+            dataimport_id=self.dataimport.id
+        ).render()
+
+        rendered = render_to_string(
+            'di_assign_fields.html',
+            {
+                'GEOKEY_VERSION': version.get_version(),
+                'PLATFORM_NAME': get_current_site(request).name,
+                'user': request.user,
+                'messages': get_messages(request),
+                'error': 'Not found.',
+                'error_description': does_not_exist_msg('Data import')
+            }
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            render_helpers.remove_csrf(response.content.decode('utf-8')),
+            rendered
+        )
+
+        reference = DataImport.objects.get(pk=self.dataimport.id)
+        self.assertIsNone(reference.keys)
+
+    def test_post_when_no_dataimport(self):
+        """
+        Test POST with with admin, when data import does not exist.
+
+        It should inform user that data import does not exist.
+        """
+        request = self.factory.post(self.url, self.data)
+        request.user = self.admin
+
+        setattr(request, 'session', 'session')
+        messages = FallbackStorage(request)
+        setattr(request, '_messages', messages)
+
+        response = self.view(
+            request,
+            project_id=self.project.id,
+            dataimport_id=self.dataimport.id + 123
+        ).render()
+
+        rendered = render_to_string(
+            'di_assign_fields.html',
+            {
+                'GEOKEY_VERSION': version.get_version(),
+                'PLATFORM_NAME': get_current_site(request).name,
+                'user': request.user,
+                'messages': get_messages(request),
+                'error': 'Not found.',
+                'error_description': does_not_exist_msg('Data import')
+            }
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            render_helpers.remove_csrf(response.content.decode('utf-8')),
+            rendered
+        )
+
+        reference = DataImport.objects.get(pk=self.dataimport.id)
+        self.assertIsNone(reference.keys)
+
+    def test_post_when_no_category(self):
+        """
+        Test POST with with admin, when category is not selected.
+
+        It should not assign fields, when category is not selected.
+        """
+        self.dataimport.category = None
+        self.dataimport.save()
+
+        request = self.factory.post(self.url, self.data)
+        request.user = self.admin
+
+        setattr(request, 'session', 'session')
+        messages = FallbackStorage(request)
+        setattr(request, '_messages', messages)
+
+        response = self.view(
+            request,
+            project_id=self.project.id,
+            dataimport_id=self.dataimport.id
+        ).render()
+
+        rendered = render_to_string(
+            'di_assign_fields.html',
+            {
+                'GEOKEY_VERSION': version.get_version(),
+                'PLATFORM_NAME': get_current_site(self.request).name,
+                'user': request.user,
+                'messages': get_messages(request),
+                'project': self.project,
+                'dataimport': self.dataimport
+            }
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            render_helpers.remove_csrf(response.content.decode('utf-8')),
+            rendered
+        )
+
+        reference = DataImport.objects.get(pk=self.dataimport.id)
+        self.assertIsNone(reference.keys)
+
+    def test_post_when_project_is_locked(self):
+        """
+        Test POST with with admin, when project is locked.
+
+        It should not assign fields, when project is locked.
+        """
+        self.project.islocked = True
+        self.project.save()
+
+        request = self.factory.post(self.url, self.data)
+        request.user = self.admin
+
+        setattr(request, 'session', 'session')
+        messages = FallbackStorage(request)
+        setattr(request, '_messages', messages)
+
+        response = self.view(
+            request,
+            project_id=self.project.id,
+            dataimport_id=self.dataimport.id
+        ).render()
+
+        rendered = render_to_string(
+            'di_assign_fields.html',
+            {
+                'GEOKEY_VERSION': version.get_version(),
+                'PLATFORM_NAME': get_current_site(self.request).name,
+                'user': request.user,
+                'messages': get_messages(request),
+                'project': self.project,
+                'dataimport': self.dataimport
+            }
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            render_helpers.remove_csrf(response.content.decode('utf-8')),
+            rendered
+        )
+
+        reference = DataImport.objects.get(pk=self.dataimport.id)
+        self.assertIsNone(reference.keys)
 
 
 class RemoveDataImportPageTest(TestCase):
