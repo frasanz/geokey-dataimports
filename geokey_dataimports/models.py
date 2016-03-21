@@ -19,7 +19,7 @@ from django_pgjson.fields import JsonBField
 from model_utils.models import StatusModel, TimeStampedModel
 
 from geokey.projects.models import Project
-from geokey.categories.models import Category
+from geokey.categories.models import Category, Field
 
 from .helpers import type_helpers
 from .base import STATUS, FORMAT
@@ -282,6 +282,44 @@ class DataField(TimeStampedModel):
         'DataImport',
         related_name='datafields'
     )
+
+    def convert_to_field(self, name, key, field_type):
+        """
+        Convert data field to regular GeoKey field.
+
+        Parameters
+        ----------
+        user : geokey.users.models.User
+            The request user.
+        name : str
+            The name of the field.
+        key : str
+            The key of the field.
+        field_type : str
+            The field type.
+
+        Returns
+        -------
+        geokey.categories.models.Field
+            The field created.
+        """
+        category = self.dataimport.category
+
+        proposed_key = key
+        suggested_key = proposed_key
+
+        count = 1
+        while category.fields.filter(key=suggested_key).exists():
+            suggested_key = '%s-%s' % (proposed_key, count)
+            count += 1
+
+        return Field.create(
+            name,
+            suggested_key,
+            '', False,
+            category,
+            field_type
+        )
 
 
 class DataFeature(TimeStampedModel):

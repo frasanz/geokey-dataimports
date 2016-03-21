@@ -12,7 +12,7 @@ from braces.views import LoginRequiredMixin
 
 from geokey.projects.models import Project
 from geokey.projects.views import ProjectContext
-from geokey.categories.models import Category, Field
+from geokey.categories.models import Category
 
 from .helpers.context_helpers import does_not_exist_msg
 from .base import FORMAT
@@ -453,28 +453,26 @@ class DataImportCreateCategoryPage(DataImportContext, CreateView):
                     'this cannot be changed.'
                 )
             else:
-                category = Category.objects.create(
+                dataimport.category = Category.objects.create(
                     name=form.instance.name,
                     description=form.instance.description,
                     project=dataimport.project,
                     creator=self.request.user
                 )
+                dataimport.save()
 
                 ids = data.getlist('ids')
                 keys = []
 
                 if ids:
                     for datafield in dataimport.datafields.filter(id__in=ids):
-                        Field.create(
+                        datafield.convert_to_field(
                             data.get('fieldname_%s' % datafield.id),
                             datafield.key,
-                            '', False,
-                            category,
                             data.get('fieldtype_%s' % datafield.id)
                         )
                         keys.append(datafield.key)
 
-                dataimport.category = category
                 dataimport.keys = keys
                 dataimport.save()
 
@@ -532,8 +530,8 @@ class DataImportAssignFieldsPage(DataImportContext, TemplateView):
             Redirects to a single data import when fields are assigned.
         django.http.HttpResponse
             Rendered template if project or data import does not exist, project
-            is locked, data import already has no category associated with it,
-            fields already have been assigned.
+            is locked, data import has no category associated with it, fields
+            already have been assigned.
         """
         data = self.request.POST
         context = self.get_context_data(project_id, dataimport_id)
@@ -562,33 +560,21 @@ class DataImportAssignFieldsPage(DataImportContext, TemplateView):
 
                 if ids:
                     for datafield in dataimport.datafields.filter(id__in=ids):
-                        field_key = data.get('existingfield_%s' % datafield.id)
+                        key = data.get('existingfield_%s' % datafield.id)
 
-                        if field_key:
-                            changed_keys[datafield.key] = field_key
-                            keys.append(field_key)
+                        if key:
+                            changed_keys[datafield.key] = key
                         else:
-                            proposed_key = datafield.key
-                            suggested_key = proposed_key
-
-                            count = 1
-                            while dataimport.category.fields.filter(
-                                    key=suggested_key).exists():
-                                suggested_key = '%s-%s' % (proposed_key, count)
-                                count += 1
-
-                            Field.create(
+                            key = datafield.key
+                            field = datafield.convert_to_field(
                                 data.get('fieldname_%s' % datafield.id),
-                                suggested_key,
-                                '', False,
-                                dataimport.category,
+                                key,
                                 data.get('fieldtype_%s' % datafield.id)
                             )
+                            if field.key != key:
+                                changed_keys[key] = field.key
 
-                            keys.append(suggested_key)
-
-                            if suggested_key != proposed_key:
-                                changed_keys[proposed_key] = suggested_key
+                        keys.append(datafield.key)
 
                     for datafeature in dataimport.datafeatures.all():
                         properties = datafeature.properties
@@ -607,7 +593,6 @@ class DataImportAssignFieldsPage(DataImportContext, TemplateView):
                     self.request,
                     'The fields have been assigned.'
                 )
-
                 return redirect(
                     'geokey_dataimports:single_dataimport',
                     project_id=dataimport.project.id,
