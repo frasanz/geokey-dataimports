@@ -602,6 +602,18 @@ class DataImportAssignFieldsPage(DataImportContext, TemplateView):
         return self.render_to_response(context)
 
 
+class DataImportAllFeaturesPage(DataImportContext, TemplateView):
+    """Data import all features page."""
+
+    template_name = 'base.html'
+
+
+class DataImportSingleFeaturePage(DataImportContext, TemplateView):
+    """Data import single feature page."""
+
+    template_name = 'base.html'
+
+
 class RemoveDataImportPage(DataImportContext, TemplateView):
     """Remove data import page."""
 
