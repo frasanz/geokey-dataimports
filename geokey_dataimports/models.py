@@ -23,6 +23,7 @@ from geokey.categories.models import Category, Field
 
 from .helpers import type_helpers
 from .base import STATUS, FORMAT
+from .exceptions import FileParseError
 from .managers import DataImportManager
 
 
@@ -132,143 +133,142 @@ class DataImport(StatusModel, TimeStampedModel):
 def post_save_dataimport(sender, instance, created, **kwargs):
     """Map data fields and data features when the data import gets created."""
     if created:
-        csv.field_size_limit(sys.maxsize)
-        file = open(instance.file.path, 'rU')
-
-        data_fields = []
-        data_features = []
+        datafields = []
+        datafeatures = []
         errors = []
+
+        if instance.dataformat == FORMAT.KML:
+            driver = ogr.GetDriverByName('KML')
+            file = driver.Open(instance.file.path)
+
+            for layer in file:
+                for feature in layer:
+                    datafeatures.append(feature.ExportToJson())
+        else:
+            csv.field_size_limit(sys.maxsize)
+            file = open(instance.file.path, 'rU')
 
         if instance.dataformat == FORMAT.GeoJSON:
             reader = json.load(file)
+            features = reader['features']
 
-            if reader['type'] != 'FeatureCollection' or not reader['features']:
-                print 'Not a valid GeoJSON FeatureCollection.'
-
-            for feature in reader['features']:
-                for key, value in feature['properties'].iteritems():
-                    print value
-        elif instance.dataformat == FORMAT.CSV:
+        if instance.dataformat == FORMAT.CSV:
             reader = csv.reader(file)
-            keys = set([])
 
-            for field_name in next(reader, None):
-                field_name = strip_tags(field_name)
-
-                if field_name:
-                    proposed_key = slugify(field_name)
-                    suggested_key = proposed_key
-
-                    count = 1
-                    while suggested_key in keys:
-                        suggested_key = '%s-%s' % (proposed_key, count)
-                        count += 1
-                    keys.add(suggested_key)
-
-                    data_fields.append({
-                        'name': field_name,
-                        'key': suggested_key,
-                        'good_types': set(['TextField', 'LookupField']),
-                        'bad_types': set([])
-                    })
+            for fieldname in next(reader, None):
+                datafields.append({
+                    'name': strip_tags(fieldname),
+                    'good_types': set(['TextField', 'LookupField']),
+                    'bad_types': set([])
+                })
 
             line = 0
             for row in reader:
                 line += 1
-                geometries = {}
                 properties = {}
 
                 for i, column in enumerate(row):
                     if column:
-                        data_field = data_fields[i]
+                        current_datafield = datafields[i]
+                        properties[current_datafield['name']] = column
+                features.append({'line': line, 'properties': properties})
 
-                        try:
-                            geometry = ogr.CreateGeometryFromWkt(str(column))
-                            geometry = geometry.ExportToJson()
-                        except:
-                            geometry = None
+        for feature in datafeatures:
+            geometries = {}
 
-                        field_type = 'GeometryField'
-                        if geometry is not None:
-                            if field_type not in data_field['bad_types']:
-                                data_field['good_types'].add(field_type)
-                                geometries[data_field['key']] = geometry
-                        else:
-                            data_field['good_types'].discard(field_type)
-                            data_field['bad_types'].add(field_type)
+            for key, value in feature['properties'].iteritems():
+                current_datafield = None
 
-                            field_type = 'NumericField'
-                            if type_helpers.is_numeric(column):
-                                if field_type not in data_field['bad_types']:
-                                    data_field['good_types'].add(field_type)
-                            else:
-                                data_field['good_types'].discard(field_type)
-                                data_field['bad_types'].add(field_type)
+                for datafield in datafields:
+                        if datafield['name'] == key:
+                            current_datafield = datafield
 
-                            field_types = ['DateField', 'DateTimeField']
-                            if type_helpers.is_date(column):
-                                for field_type in field_types:
-                                    if (field_type not in
-                                            data_field['bad_types']):
-                                        data_field['good_types'].add(
-                                            field_type)
-                            else:
-                                for field_type in field_types:
-                                    data_field['good_types'].discard(
-                                        field_type)
-                                    data_field['bad_types'].add(
-                                        field_type)
-
-                            field_type = 'TimeField'
-                            if type_helpers.is_time(column):
-                                if field_type not in data_field['bad_types']:
-                                    data_field['good_types'].add(field_type)
-                            else:
-                                data_field['good_types'].discard(field_type)
-                                data_field['bad_types'].add(field_type)
-
-                            properties[data_field['key']] = column
-
-                if len(geometries) == 0:
-                    errors.append({
-                        'line': line,
-                        'messages': ['The entry has no geometry set.']
+                if current_datafield is None:
+                    datafields.append({
+                        'name': key,
+                        'good_types': set(['TextField', 'LookupField']),
+                        'bad_types': set([])
                     })
-                else:
-                    data_features.append({
-                        'line': line,
-                        'geometries': geometries,
-                        'properties': properties
-                    })
+                    current_datafield = datafields[-1]
 
-        geometry_field_key = None
-        for data_field in data_fields:
-            if 'GeometryField' not in data_field['good_types']:
+                fieldtype = None
+
+                if 'geometry' not in feature:
+                    try:
+                        geometry = ogr.CreateGeometryFromWkt(str(value))
+                        geometry = geometry.ExportToJson()
+                    except:
+                        geometry = None
+
+                    fieldtype = 'GeometryField'
+                    if geometry is not None:
+                        if fieldtype not in current_datafield['bad_types']:
+                            current_datafield['good_types'].add(fieldtype)
+                            geometries[datafield['name']] = geometry
+                    else:
+                        current_datafield['good_types'].discard(fieldtype)
+                        current_datafield['bad_types'].add(fieldtype)
+                        fieldtype = None
+
+                if fieldtype is None:
+                    fieldtype = 'NumericField'
+                    if type_helpers.is_numeric(value):
+                        if fieldtype not in datafield['bad_types']:
+                            datafield['good_types'].add(fieldtype)
+                    else:
+                        datafield['good_types'].discard(fieldtype)
+                        datafield['bad_types'].add(fieldtype)
+
+                    fieldtypes = ['DateField', 'DateTimeField']
+                    if type_helpers.is_date(value):
+                        for fieldtype in fieldtypes:
+                            if fieldtype not in datafield['bad_types']:
+                                datafield['good_types'].add(fieldtype)
+                    else:
+                        for fieldtype in fieldtypes:
+                            datafield['good_types'].discard(fieldtype)
+                            datafield['bad_types'].add(fieldtype)
+
+                    fieldtype = 'TimeField'
+                    if type_helpers.is_time(value):
+                        if fieldtype not in datafield['bad_types']:
+                            datafield['good_types'].add(fieldtype)
+                    else:
+                        datafield['good_types'].discard(fieldtype)
+                        datafield['bad_types'].add(fieldtype)
+
+            if 'geometry' not in feature and len(geometries) == 0:
+                errors.append({
+                    'line': feature['line'],
+                    'messages': ['The entry has no geometry set.']
+                })
+                datafeatures['error'] = True
+            else:
+                datafeatures['geometries'] = geometries
+
+        geometry_field = None
+        for datafield in datafields:
+            if 'GeometryField' not in datafield['good_types']:
                 DataField.objects.create(
                     name=data_field['name'],
-                    key=data_field['key'],
                     types=list(data_field['good_types']),
                     dataimport=instance
                 )
-            elif geometry_field_key is None:
-                geometry_field_key = data_field['key']
+            elif geometry_field is None:
+                geometry_field = datafield['name']
 
-        for data_feature in data_features:
-            if geometry_field_key in data_feature['geometries']:
+        for datafeature in datafeatures:
+            if 'geometry' in datafeature:
+                geometry = datafeature['geometry']
+            elif geometry_field in datafeature['geometries']:
+                geometry = datafeature['geometries'][geometry_field]
+
+            if geometry:
                 DataFeature.objects.create(
-                    geometry=data_feature['geometries'][geometry_field_key],
-                    properties=data_feature['properties'],
+                    geometry=geometry,
+                    properties=datafeature['properties'],
                     dataimport=instance
                 )
-            else:
-                errors.append({
-                    'line': data_feature['line'],
-                    'messages': [
-                        'Entry has no geometry set inside the `%s column.' % (
-                            geometry_field_key
-                        )
-                    ]
-                })
 
 
 class DataField(TimeStampedModel):

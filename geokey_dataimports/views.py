@@ -16,6 +16,7 @@ from geokey.categories.models import Category
 
 from .helpers.context_helpers import does_not_exist_msg
 from .base import FORMAT
+from .exceptions import FileParseError
 from .models import DataImport
 from .forms import CategoryForm, DataImportForm
 
@@ -142,29 +143,33 @@ class AddDataImportPage(LoginRequiredMixin, ProjectContext, CreateView):
                     )
 
                 if form.instance.dataformat:
-                    if self.request.POST.get('category_create') == 'false':
-                        try:
-                            form.instance.category = project.categories.get(
-                                pk=self.request.POST.get('category')
-                            )
+                    try:
+                        if self.request.POST.get('category_create') == 'false':
+                            try:
+                                form.instance.category = project.categories.get(
+                                    pk=self.request.POST.get('category')
+                                )
+                                messages.success(
+                                    self.request,
+                                    'The data import has been added and the '
+                                    'category has been selected.'
+                                )
+                            except Category.DoesNotExist:
+                                messages.error(
+                                    self.request,
+                                    'The category does not exist. Please create a '
+                                    'new category.'
+                                )
+                        else:
                             messages.success(
                                 self.request,
-                                'The data import has been added and the '
-                                'category has been selected.'
+                                'The data import has been added.'
                             )
-                        except Category.DoesNotExist:
-                            messages.error(
-                                self.request,
-                                'The category does not exist. Please create a '
-                                'new category.'
-                            )
-                    else:
-                        messages.success(
-                            self.request,
-                            'The data import has been added.'
-                        )
 
-                    return super(AddDataImportPage, self).form_valid(form)
+
+                        return super(AddDataImportPage, self).form_valid(form)
+                    except FileParseError, error:
+                        messages.error(self.request, error.to_html())
 
         return self.render_to_response(context)
 
