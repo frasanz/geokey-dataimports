@@ -10,7 +10,6 @@ from .views import (
     DataImportCreateCategoryPage,
     DataImportAssignFieldsPage,
     DataImportAllDataFeaturesPage,
-    DataImportSingleDataFeaturePage,
     RemoveDataImportPage
 )
 
@@ -55,12 +54,6 @@ urlpatterns = [
         r'datafeatures/$',
         DataImportAllDataFeaturesPage.as_view(),
         name='dataimport_all_datafeatures'),
-    url(
-        r'^admin/projects/(?P<project_id>[0-9]+)/'
-        r'dataimports/(?P<dataimport_id>[0-9]+)/'
-        r'datafeatures/(?P<datafeature_id>[0-9]+)/$',
-        DataImportSingleDataFeaturePage.as_view(),
-        name='dataimport_single_datafeature'),
     url(
         r'^admin/projects/(?P<project_id>[0-9]+)/'
         r'dataimports/(?P<dataimport_id>[0-9]+)/remove/$',

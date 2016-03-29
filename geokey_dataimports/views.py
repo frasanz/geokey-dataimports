@@ -3,6 +3,9 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
+import json
+
+from django.core.exceptions import ValidationError
 from django.core.urlresolvers import reverse
 from django.views.generic import CreateView, FormView, TemplateView
 from django.shortcuts import redirect
@@ -12,7 +15,8 @@ from braces.views import LoginRequiredMixin
 
 from geokey.projects.models import Project
 from geokey.projects.views import ProjectContext
-from geokey.categories.models import Category
+from geokey.categories.models import Category, LookupValue
+from geokey.contributions.serializers import ContributionSerializer
 
 from .helpers.context_helpers import does_not_exist_msg
 from .base import FORMAT
@@ -544,7 +548,7 @@ class DataImportAssignFieldsPage(DataImportContext, TemplateView):
             elif not dataimport.category:
                 messages.error(
                     request,
-                    'The data import has not category associated with it.'
+                    'The data import has no category associated with it.'
                 )
             elif dataimport.keys:
                 messages.error(
@@ -588,13 +592,132 @@ class DataImportAssignFieldsPage(DataImportContext, TemplateView):
 class DataImportAllDataFeaturesPage(DataImportContext, TemplateView):
     """Data import all data features page."""
 
-    template_name = 'base.html'
+    template_name = 'di_all_datafeatures.html'
 
+    def get_context_data(self, *args, **kwargs):
+        """
+        GET method for the template.
 
-class DataImportSingleDataFeaturePage(DataImportContext, TemplateView):
-    """Data import single data feature page."""
+        Return the context to render the view. Overwrite the method by adding
+        data features (not imported yet) to the context.
 
-    template_name = 'base.html'
+        Returns
+        -------
+        dict
+            Context.
+        """
+        context = super(DataImportAllDataFeaturesPage, self).get_context_data(
+            *args,
+            **kwargs
+        )
+        dataimport = context.get('dataimport')
+
+        datafeatures = []
+        for datafeature in dataimport.datafeatures.filter(imported=False):
+            datafeatures.append({
+                'type': 'Feature',
+                'id': datafeature.id,
+                'geometry': json.loads(datafeature.geometry.json)
+            })
+
+        context['datafeatures'] = {
+            'type': 'FeatureCollection',
+            'features': datafeatures
+        }
+
+        return context
+
+    def post(self, request, project_id, dataimport_id):
+        data = self.request.POST
+        context = self.get_context_data(project_id, dataimport_id)
+        dataimport = context.get('dataimport')
+
+        if dataimport:
+            if dataimport.project.islocked:
+                messages.error(
+                    request,
+                    'The project is locked. Data cannot be imported.'
+                )
+            elif not dataimport.category:
+                messages.error(
+                    request,
+                    'The data import has no category associated with it.'
+                )
+            elif not dataimport.keys:
+                messages.error(
+                    request,
+                    'The data import has no fields assigned.'
+                )
+            else:
+                ids = data.get('ids')
+
+                if ids:
+                    ids = json.loads(ids)
+                else:
+                    ids = []
+
+                project = dataimport.project
+                category = dataimport.category
+                lookupfields = dataimport.get_lookup_fields()
+                datafeatures = dataimport.datafeatures.filter(
+                    id__in=ids,
+                    imported=False
+                )
+
+                imported = 0
+                for datafeature in datafeatures:
+                    properties = datafeature.properties
+
+                    for key, value in properties.iteritems():
+                        if key in lookupfields:
+                            value, created = LookupValue.objects.get_or_create(
+                                name=value,
+                                field=lookupfields[key]
+                            )
+                            properties[key] = value.id
+
+                    feature = {
+                        "location": {
+                            "geometry": datafeature.geometry
+                        },
+                        "meta": {
+                            "category": category.id,
+                        },
+                        "properties": properties
+                    }
+
+                    serializer = ContributionSerializer(
+                        data=feature,
+                        context={'user': self.request.user, 'project': project}
+                    )
+
+                    try:
+                        serializer.is_valid(raise_exception=True)
+                        serializer.save()
+                        datafeature.imported = True
+                        datafeature.save()
+                        imported += 1
+                    except ValidationError:
+                        pass
+
+                if imported > 0:
+                    messages.success(
+                        request,
+                        '%s contribution(s) imported.' % imported
+                    )
+                else:
+                    messages.warning(
+                        request,
+                        'No contributions imported.'
+                    )
+
+                return redirect(
+                    'geokey_dataimports:single_dataimport',
+                    project_id=dataimport.project.id,
+                    dataimport_id=dataimport.id
+                )
+
+        return self.render_to_response(context)
 
 
 class RemoveDataImportPage(DataImportContext, TemplateView):

@@ -7,7 +7,6 @@ import csv
 from osgeo import ogr
 
 from django.conf import settings
-from django.core.exceptions import ValidationError
 from django.dispatch import receiver
 from django.db import models
 from django.utils.html import strip_tags
@@ -67,66 +66,6 @@ class DataImport(StatusModel, TimeStampedModel):
             if field.fieldtype == 'LookupField':
                 lookupfields[field.key] = field
         return lookupfields
-
-    def import_contributions(self, user, ids):
-        """
-        Convert data features to contributions.
-
-        Parameters
-        ----------
-        user : geokey.users.models.User
-            The request user.
-        ids : list
-            The list of IDs of data features to be imported.
-
-        Returns
-        -------
-        list
-            The list of error messages, containing dicts of data feature IDs
-            and messages.
-        """
-        from geokey.contributions.serializers import ContributionSerializer
-
-        data_features = self.datafeatures.filter(id__in=ids, imported=False)
-        lookupfields = self.get_lookup_fields()
-        errors = []
-
-        for data_feature in data_features:
-            properties = data_feature.properties
-
-            for key, value in properties.iteritems():
-                if key in lookupfields:
-                    lookupfield = lookupfields[key]
-                    lookupvalue = lookupfield.lookupvalues.get(name=value)
-                    properties[key] = lookupvalue.id
-
-            feature = {
-                "location": {
-                    "geometry": data_feature.geometry
-                },
-                "meta": {
-                    "category": self.category.id,
-                },
-                "properties": properties
-            }
-
-            serializer = ContributionSerializer(
-                data=feature,
-                context={'user': user, 'project': self.project}
-            )
-
-            try:
-                serializer.is_valid(raise_exception=True)
-                serializer.save()
-                data_feature.imported = True
-                data_feature.save()
-            except ValidationError, error:
-                errors.append({
-                    'id': data_feature.id,
-                    'messages': error.messages
-                })
-
-        return errors
 
 
 @receiver(models.signals.post_save, sender=DataImport)
