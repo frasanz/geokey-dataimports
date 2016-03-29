@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load di_tags %}
 
 {% block bodydata %}
 data-project-id="{{ project.id }}"
@@ -16,16 +17,112 @@ data-dataimport-id="{{ dataimport.id }}"
         <div class="col-md-12">
             <h3 class="header">
                 {% if project.islocked %}<span class="glyphicon glyphicon-lock text-warning" aria-hidden="true"></span>{% endif %}
-                <span>Data imports</span>
-
-                {% if project.dataimports.all and not project.islocked %}
-                    <a role="button" href="{% url 'geokey_dataimports:dataimport_add' project.id %}" class="btn btn-sm btn-success pull-right">
-                        <span class="glyphicon glyphicon-plus"></span>
-                        <span></span>
-                    </a>
-                {% endif %}
+                <span>Data features</span>
             </h3>
+
+            <div id="map"></div>
+
+            <form method="POST" action="{% url 'geokey_dataimports:dataimport_all_datafeatures' project.id dataimport.id %}" novalidate>
+                {% csrf_token %}
+
+                <input type="hidden" id="ids" name="ids" />
+
+                <div class="form-group">
+                    <button type="submit" class="btn btn-primary">Import</button>
+                    <a role="button" href="{% url 'geokey_dataimports:single_dataimport' project.id dataimport.id %}" class="btn btn-link">Cancel</a>
+                </div>
+            </form>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block libraries %}
+<link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/leaflet.css">
+<script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/leaflet.js"></script>
+
+<script type="text/javascript">
+    $(function() {
+        'use strict';
+
+        var features = {{ datafeatures|jsonify }};
+
+        var selectedColor = '#265cb2';
+        var deselectedColor = '#c0c0c0';
+
+        var selectedMarker = L.icon({
+            iconUrl: '/static/img/marker-selected.png',
+            iconSize: [32, 37],
+            iconAnchor: [16, 36],
+        });
+        var deselectedMarker = L.icon({
+            iconUrl: '/static/img/marker-deselected.png',
+            iconSize: [32, 37],
+            iconAnchor: [16, 36],
+        });
+
+        // Initialize map
+        window.map = L.map('map').setView([0, 0], 1);
+
+        L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(window.map);
+
+        // Add features
+        if (features) {
+            features = L.geoJson(features, {
+                style: {
+                    color: selectedColor
+                },
+                pointToLayer: function (featureData, latlng) {
+                    return new L.Marker(latlng, {icon: selectedMarker})
+                },
+                onEachFeature: function(feature, layer) {
+                    feature.selected = true;
+
+                    layer.on('click', function () {
+                        var marker, color;
+
+                        if (feature.selected) {
+                            marker = deselectedMarker;
+                            color = deselectedColor;
+                            feature.selected = false;
+                        } else {
+                            marker = selectedMarker;
+                            color = deselectedColor;
+                            feature.selected = true;
+                        }
+
+                        if (layer.setIcon) {
+                            layer.setIcon(marker);
+                        } else {
+                            layer.setStyle({color: color});
+                        }
+
+                        checkSelectedFeatures();
+                    });
+                }
+            }).addTo(window.map);
+            window.map.fitBounds(features.getBounds());
+            checkSelectedFeatures();
+        }
+
+        /**
+         * Checks selected features, makes an array of IDs and adds to the form.
+         */
+        function checkSelectedFeatures() {
+            var ids = [];
+
+            if (features) {
+                features.eachLayer(function (layer) {
+                    if (layer.feature.selected) {
+                        ids.push(layer.feature.id);
+                    }
+                });
+            }
+
+            $('input#ids').val(JSON.stringify(ids));
+        }
+    });
+</script>
 {% endblock %}

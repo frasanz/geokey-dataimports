@@ -1,6 +1,9 @@
 """All template tags for the extension."""
 
+import json
+
 from django import template
+from django.utils.safestring import mark_safe
 
 
 register = template.Library()
@@ -91,3 +94,21 @@ def filter_imported(datafeatures):
         Filtered dataset.
     """
     return datafeatures.filter(imported=True)
+
+
+@register.filter
+def jsonify(object):
+    """
+    Make JSON object.
+
+    Parameters
+    ----------
+    object : obj
+        An object to JSONify.
+
+    Returns
+    -------
+    obj
+        JSON object.
+    """
+    return mark_safe(json.dumps(object))
