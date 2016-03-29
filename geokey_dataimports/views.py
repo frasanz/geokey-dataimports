@@ -465,12 +465,11 @@ class DataImportCreateCategoryPage(DataImportContext, CreateView):
 
                 if ids:
                     for datafield in dataimport.datafields.filter(id__in=ids):
-                        datafield.convert_to_field(
+                        field = datafield.convert_to_field(
                             data.get('fieldname_%s' % datafield.id),
-                            datafield.key,
                             data.get('fieldtype_%s' % datafield.id)
                         )
-                        keys.append(datafield.key)
+                        keys.append(field.key)
 
                 dataimport.keys = keys
                 dataimport.save()
@@ -555,35 +554,20 @@ class DataImportAssignFieldsPage(DataImportContext, TemplateView):
             else:
                 ids = data.getlist('ids')
                 keys = []
-                changed_keys = {}
 
                 if ids:
                     for datafield in dataimport.datafields.filter(id__in=ids):
                         key = data.get('existingfield_%s' % datafield.id)
 
                         if key:
-                            changed_keys[datafield.key] = key
-                        else:
-                            key = datafield.key
-                            field = datafield.convert_to_field(
-                                data.get('fieldname_%s' % datafield.id),
-                                key,
-                                data.get('fieldtype_%s' % datafield.id)
-                            )
-                            if field.key != key:
-                                changed_keys[key] = field.key
+                            datafield.key = key
+                            datafield.save()
 
-                        keys.append(datafield.key)
-
-                    for datafeature in dataimport.datafeatures.all():
-                        properties = datafeature.properties
-
-                        for old_key, new_key in changed_keys.iteritems():
-                            if old_key in properties:
-                                properties[new_key] = properties.pop(old_key)
-
-                        datafeature.properties = properties
-                        datafeature.save()
+                        field = datafield.convert_to_field(
+                            data.get('fieldname_%s' % datafield.id),
+                            data.get('fieldtype_%s' % datafield.id)
+                        )
+                        keys.append(field.key)
 
                 dataimport.keys = keys
                 dataimport.save()

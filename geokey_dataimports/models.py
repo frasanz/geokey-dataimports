@@ -312,7 +312,7 @@ class DataField(TimeStampedModel):
         related_name='datafields'
     )
 
-    def convert_to_field(self, name, key, field_type):
+    def convert_to_field(self, name, fieldtype):
         """
         Convert data field to regular GeoKey field.
 
@@ -322,9 +322,7 @@ class DataField(TimeStampedModel):
             The request user.
         name : str
             The name of the field.
-        key : str
-            The key of the field.
-        field_type : str
+        fieldtype : str
             The field type.
 
         Returns
@@ -333,22 +331,47 @@ class DataField(TimeStampedModel):
             The field created.
         """
         category = self.dataimport.category
+        field = None
 
-        proposed_key = key
+        if self.key:
+            try:
+                field = category.fields.get(key=self.key)
+            except Category.DoesNotExist:
+                pass
+
+        proposed_key = slugify(self.name)
         suggested_key = proposed_key
 
-        count = 1
-        while category.fields.filter(key=suggested_key).exists():
-            suggested_key = '%s-%s' % (proposed_key, count)
-            count += 1
+        if field:
+            suggested_key = field.key
+        else:
+            count = 1
+            while category.fields.filter(key=suggested_key).exists():
+                suggested_key = '%s-%s' % (proposed_key, count)
+                count += 1
 
-        return Field.create(
-            name,
-            suggested_key,
-            '', False,
-            category,
-            field_type
-        )
+            self.key = suggested_key
+            self.save()
+
+            field = Field.create(
+                name,
+                self.key,
+                '', False,
+                category,
+                fieldtype
+            )
+
+        if suggested_key != proposed_key:
+            for datafeature in self.dataimport.datafeatures.all():
+                properties = datafeature.properties
+
+                if proposed_key in properties:
+                    properties[suggested_key] = properties.pop(proposed_key)
+
+                datafeature.properties = properties
+                datafeature.save()
+
+        return field
 
 
 class DataFeature(TimeStampedModel):
