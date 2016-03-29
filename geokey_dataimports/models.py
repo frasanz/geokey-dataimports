@@ -286,11 +286,12 @@ def post_save_dataimport(sender, instance, created, **kwargs):
             raise FileParseError('Failed to read file.', errors)
         else:
             for datafield in datafields:
-                DataField.objects.create(
-                    name=datafield['name'],
-                    types=list(datafield['types']),
-                    dataimport=instance
-                )
+                if datafield['name']:
+                    DataField.objects.create(
+                        name=datafield['name'],
+                        types=list(datafield['types']),
+                        dataimport=instance
+                    )
             for datafeature in datafeatures:
                 DataFeature.objects.create(
                     geometry=json.dumps(datafeature['geometry']),
