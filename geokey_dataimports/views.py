@@ -146,30 +146,24 @@ class AddDataImportPage(LoginRequiredMixin, ProjectContext, CreateView):
                     try:
                         if self.request.POST.get('category_create') == 'false':
                             try:
-                                form.instance.category = project.categories.get(
+                                category = project.categories.get(
                                     pk=self.request.POST.get('category')
                                 )
-                                messages.success(
-                                    self.request,
-                                    'The data import has been added and the '
-                                    'category has been selected.'
-                                )
+                                form.instance.category = category
                             except Category.DoesNotExist:
                                 messages.error(
                                     self.request,
-                                    'The category does not exist. Please create a '
-                                    'new category.'
+                                    'The category does not exist.'
                                 )
-                        else:
-                            messages.success(
-                                self.request,
-                                'The data import has been added.'
-                            )
-
 
                         return super(AddDataImportPage, self).form_valid(form)
                     except FileParseError, error:
                         messages.error(self.request, error.to_html())
+                    else:
+                        messages.success(
+                            self.request,
+                            'The data import has been added.'
+                        )
 
         return self.render_to_response(context)
 

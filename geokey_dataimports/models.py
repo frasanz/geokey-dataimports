@@ -135,15 +135,18 @@ def post_save_dataimport(sender, instance, created, **kwargs):
     if created:
         datafields = []
         datafeatures = []
+
+        fields = []
+        features = []
         errors = []
 
         if instance.dataformat == FORMAT.KML:
             driver = ogr.GetDriverByName('KML')
-            file = driver.Open(instance.file.path)
+            reader = driver.Open(instance.file.path)
 
-            for layer in file:
+            for layer in reader:
                 for feature in layer:
-                    datafeatures.append(feature.ExportToJson())
+                    features.append(feature.ExportToJson())
         else:
             csv.field_size_limit(sys.maxsize)
             file = open(instance.file.path, 'rU')
@@ -156,7 +159,7 @@ def post_save_dataimport(sender, instance, created, **kwargs):
             reader = csv.reader(file)
 
             for fieldname in next(reader, None):
-                datafields.append({
+                fields.append({
                     'name': strip_tags(fieldname),
                     'good_types': set(['TextField', 'LookupField']),
                     'bad_types': set([])
@@ -169,27 +172,29 @@ def post_save_dataimport(sender, instance, created, **kwargs):
 
                 for i, column in enumerate(row):
                     if column:
-                        current_datafield = datafields[i]
-                        properties[current_datafield['name']] = column
+                        field = fields[i]
+                        properties[field['name']] = column
+
                 features.append({'line': line, 'properties': properties})
 
-        for feature in datafeatures:
+        for feature in features:
             geometries = {}
 
             for key, value in feature['properties'].iteritems():
-                current_datafield = None
+                field = None
 
-                for datafield in datafields:
-                        if datafield['name'] == key:
-                            current_datafield = datafield
+                for existing_field in fields:
+                    if existing_field['name'] == key:
+                        field = existing_field
+                        break
 
-                if current_datafield is None:
-                    datafields.append({
+                if field is None:
+                    fields.append({
                         'name': key,
                         'good_types': set(['TextField', 'LookupField']),
                         'bad_types': set([])
                     })
-                    current_datafield = datafields[-1]
+                    field = fields[-1]
 
                 fieldtype = None
 
@@ -202,70 +207,93 @@ def post_save_dataimport(sender, instance, created, **kwargs):
 
                     fieldtype = 'GeometryField'
                     if geometry is not None:
-                        if fieldtype not in current_datafield['bad_types']:
-                            current_datafield['good_types'].add(fieldtype)
-                            geometries[datafield['name']] = geometry
+                        if fieldtype not in field['bad_types']:
+                            field['good_types'].add(fieldtype)
+                            geometries[field['name']] = json.loads(geometry)
                     else:
-                        current_datafield['good_types'].discard(fieldtype)
-                        current_datafield['bad_types'].add(fieldtype)
+                        field['good_types'].discard(fieldtype)
+                        field['bad_types'].add(fieldtype)
                         fieldtype = None
 
                 if fieldtype is None:
                     fieldtype = 'NumericField'
                     if type_helpers.is_numeric(value):
-                        if fieldtype not in datafield['bad_types']:
-                            datafield['good_types'].add(fieldtype)
+                        if fieldtype not in field['bad_types']:
+                            field['good_types'].add(fieldtype)
                     else:
-                        datafield['good_types'].discard(fieldtype)
-                        datafield['bad_types'].add(fieldtype)
+                        field['good_types'].discard(fieldtype)
+                        field['bad_types'].add(fieldtype)
 
                     fieldtypes = ['DateField', 'DateTimeField']
                     if type_helpers.is_date(value):
                         for fieldtype in fieldtypes:
-                            if fieldtype not in datafield['bad_types']:
-                                datafield['good_types'].add(fieldtype)
+                            if fieldtype not in field['bad_types']:
+                                field['good_types'].add(fieldtype)
                     else:
                         for fieldtype in fieldtypes:
-                            datafield['good_types'].discard(fieldtype)
-                            datafield['bad_types'].add(fieldtype)
+                            field['good_types'].discard(fieldtype)
+                            field['bad_types'].add(fieldtype)
 
                     fieldtype = 'TimeField'
                     if type_helpers.is_time(value):
-                        if fieldtype not in datafield['bad_types']:
-                            datafield['good_types'].add(fieldtype)
+                        if fieldtype not in field['bad_types']:
+                            field['good_types'].add(fieldtype)
                     else:
-                        datafield['good_types'].discard(fieldtype)
-                        datafield['bad_types'].add(fieldtype)
+                        field['good_types'].discard(fieldtype)
+                        field['bad_types'].add(fieldtype)
 
             if 'geometry' not in feature and len(geometries) == 0:
                 errors.append({
                     'line': feature['line'],
                     'messages': ['The entry has no geometry set.']
                 })
-                datafeatures['error'] = True
             else:
-                datafeatures['geometries'] = geometries
+                feature['geometries'] = geometries
 
-        geometry_field = None
-        for datafield in datafields:
-            if 'GeometryField' not in datafield['good_types']:
-                DataField.objects.create(
-                    name=data_field['name'],
-                    types=list(data_field['good_types']),
-                    dataimport=instance
-                )
-            elif geometry_field is None:
-                geometry_field = datafield['name']
+        geometryfield = None
+        for field in fields:
+            if 'GeometryField' not in field['good_types']:
+                datafields.append({
+                    'name': field['name'],
+                    'types': list(field['good_types'])
+                })
+            elif geometryfield is None:
+                geometryfield = field['name']
 
-        for datafeature in datafeatures:
-            if 'geometry' in datafeature:
-                geometry = datafeature['geometry']
-            elif geometry_field in datafeature['geometries']:
-                geometry = datafeature['geometries'][geometry_field]
+        for feature in features:
+            geometry = None
+            if 'geometry' in feature:
+                geometry = feature['geometry']
+            elif 'geometries' in feature:
+                if not geometryfield:
+                    errors.append({
+                        'line': feature['line'],
+                        'messages': ['The file has no valid geometry field.']
+                    })
+                else:
+                    geometries = feature['geometries']
+                    if geometryfield in geometries:
+                        geometry = geometries[geometryfield]
 
             if geometry:
+                datafeatures.append({
+                    'geometry': geometry,
+                    'properties': feature['properties']
+                })
+
+        if errors:
+            instance.delete()
+            raise FileParseError('Failed to read file.', errors)
+        else:
+            for datafield in datafields:
+                DataField.objects.create(
+                    name=datafield['name'],
+                    types=list(datafield['types']),
+                    dataimport=instance
+                )
+            for datafeature in datafeatures:
                 DataFeature.objects.create(
-                    geometry=geometry,
+                    geometry=json.dumps(datafeature['geometry']),
                     properties=datafeature['properties'],
                     dataimport=instance
                 )
@@ -275,7 +303,7 @@ class DataField(TimeStampedModel):
     """Store a single data field."""
 
     name = models.CharField(max_length=100)
-    key = models.CharField(max_length=100)
+    key = models.CharField(max_length=100, null=True, blank=True)
     types = ArrayField(models.CharField(max_length=100), null=True, blank=True)
 
     dataimport = models.ForeignKey(
