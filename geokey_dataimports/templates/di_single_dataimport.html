@@ -1,5 +1,4 @@
 {% extends 'base.html' %}
-{% load di_tags %}
 
 {% block bodydata %}
 data-project-id="{{ project.id }}"
@@ -32,14 +31,8 @@ data-dataimport-id="{{ dataimport.id }}"
                         <p>Please <a href="{% url 'geokey_dataimports:dataimport_assign_fields' project.id dataimport.id %}">assign fields</a>.</p>
                     </div>
                 {% else %}
-                    <div id="statistics" class="panel-body">
-                        {% with imported=dataimport.datafeatures|filter_imported %}
-                            <span class="number">{{ imported.count }}</span>
-                            <p>already imported</p>
-
-                            <span class="number">{{ dataimport.datafeatures.count|subtract:imported.count }}</span>
-                            <p>left to import</p>
-                        {% endwith %}
+                    <div class="list-group">
+                        <a href="{% url 'geokey_dataimports:dataimport_all_datafeatures' project.id dataimport.id %}" class="list-group-item">Import data</a>
                     </div>
                 {% endif %}
             </div>
