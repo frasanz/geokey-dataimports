@@ -60,10 +60,14 @@ class IndexPageTest(TestCase):
 
         self.project_1 = ProjectFactory.create(add_admins=[self.user])
         self.project_2 = ProjectFactory.create(add_admins=[self.user])
-        self.project_3 = ProjectFactory.create(add_contributors=[self.user])
-        self.project_4 = ProjectFactory.create()
+        self.project_3 = ProjectFactory.create(add_admins=[self.user])
+        self.project_4 = ProjectFactory.create(add_contributors=[self.user])
+        self.project_5 = ProjectFactory.create()
         DataImportFactory.create(project=self.project_2)
-        DataImportFactory.create(project=self.project_3)
+        DataImportFactory.create(project=self.project_4)
+
+        di_to_delete = DataImportFactory.create(project=self.project_3)
+        di_to_delete.delete()
 
         setattr(self.request, 'session', 'session')
         messages = FallbackStorage(self.request)
@@ -94,7 +98,7 @@ class IndexPageTest(TestCase):
         It should render the page with all projects, where user is an
         administrator.
         """
-        projects = [self.project_1, self.project_2]
+        projects = [self.project_1, self.project_2, self.project_3]
 
         self.request.user = self.user
         response = self.view(self.request).render()
@@ -124,7 +128,7 @@ class IndexPageTest(TestCase):
         It should render the page with all projects, where user is an
         administrator. Those projects must also not have data imports.
         """
-        projects = [self.project_1]
+        projects = [self.project_1, self.project_3]
 
         self.request.user = self.user
         self.request.GET['filter'] = 'without-data-imports-only'

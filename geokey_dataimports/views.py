@@ -9,6 +9,7 @@ from django.core.exceptions import ValidationError
 from django.core.urlresolvers import reverse
 from django.views.generic import CreateView, FormView, TemplateView
 from django.shortcuts import redirect
+from django.db.models import BooleanField, Q, Case, When
 from django.contrib import messages
 
 from braces.views import LoginRequiredMixin
@@ -48,19 +49,29 @@ class IndexPage(LoginRequiredMixin, TemplateView):
         dict
             Context.
         """
-        projects = Project.objects.filter(admins=self.request.user)
+        projects = Project.objects.filter(admins=self.request.user).annotate(
+            with_dataimports=Case(
+                When(
+                    ~Q(dataimports__status='deleted') &
+                    Q(dataimports__isnull=False),
+                    then=True
+                ),
+                default=False,
+                output_field=BooleanField()
+            )
+        ).distinct()
 
         filters = {}
         filter_for_projects = self.request.GET.get('filter')
 
         filter_to_add = 'without-data-imports-only'
         if filter_for_projects == filter_to_add:
-            projects = projects.filter(dataimports__isnull=True).distinct()
+            projects = projects.filter(with_dataimports=False)
         filters[filter_to_add] = 'Without data imports'
 
         filter_to_add = 'with-data-imports-only'
         if filter_for_projects == filter_to_add:
-            projects = projects.filter(dataimports__isnull=False).distinct()
+            projects = projects.filter(with_dataimports=True)
         filters[filter_to_add] = 'With data imports'
 
         return super(IndexPage, self).get_context_data(
