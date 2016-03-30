@@ -610,7 +610,7 @@ class DataImportAllDataFeaturesPage(DataImportContext, TemplateView):
         GET method for the template.
 
         Return the context to render the view. Overwrite the method by adding
-        data features (not imported yet) to the context.
+        all data features (not imported yet) to the context.
 
         Returns
         -------
@@ -623,22 +623,44 @@ class DataImportAllDataFeaturesPage(DataImportContext, TemplateView):
         )
         dataimport = context.get('dataimport')
 
-        datafeatures = []
-        for datafeature in dataimport.datafeatures.filter(imported=False):
-            datafeatures.append({
-                'type': 'Feature',
-                'id': datafeature.id,
-                'geometry': json.loads(datafeature.geometry.json)
-            })
+        if dataimport:
+            datafeatures = []
+            for datafeature in dataimport.datafeatures.filter(imported=False):
+                datafeatures.append({
+                    'type': 'Feature',
+                    'id': datafeature.id,
+                    'geometry': json.loads(datafeature.geometry.json)
+                })
 
-        context['datafeatures'] = {
-            'type': 'FeatureCollection',
-            'features': datafeatures
-        }
+            context['datafeatures'] = {
+                'type': 'FeatureCollection',
+                'features': datafeatures
+            }
 
         return context
 
     def post(self, request, project_id, dataimport_id):
+        """
+        POST method for converting data features to contributions.
+
+        Parameters
+        ----------
+        request : django.http.HttpRequest
+            Object representing the request.
+        project_id : int
+            Identifies the project in the database.
+        dataimport_id : int
+            Identifies the data import in the database.
+
+        Returns
+        -------
+        django.http.HttpResponseRedirect
+            Redirects to a single data import when fields are assigned.
+        django.http.HttpResponse
+            Rendered template if project or data import does not exist, project
+            is locked, data import has no category associated with it, or data
+            import has no fields assigned.
+        """
         data = self.request.POST
         context = self.get_context_data(project_id, dataimport_id)
         dataimport = context.get('dataimport')
@@ -667,8 +689,6 @@ class DataImportAllDataFeaturesPage(DataImportContext, TemplateView):
                 else:
                     ids = []
 
-                project = dataimport.project
-                category = dataimport.category
                 lookupfields = dataimport.get_lookup_fields()
                 datafeatures = dataimport.datafeatures.filter(
                     id__in=ids,
@@ -692,14 +712,17 @@ class DataImportAllDataFeaturesPage(DataImportContext, TemplateView):
                             "geometry": datafeature.geometry
                         },
                         "meta": {
-                            "category": category.id,
+                            "category": dataimport.category.id,
                         },
                         "properties": properties
                     }
 
                     serializer = ContributionSerializer(
                         data=feature,
-                        context={'user': self.request.user, 'project': project}
+                        context={
+                            'user': self.request.user,
+                            'project': dataimport.project
+                        }
                     )
 
                     try:
@@ -711,21 +734,14 @@ class DataImportAllDataFeaturesPage(DataImportContext, TemplateView):
                     except ValidationError:
                         pass
 
-                if imported > 0:
-                    messages.success(
-                        request,
-                        '%s contribution(s) imported.' % imported
-                    )
-                else:
-                    messages.warning(
-                        request,
-                        'No contributions imported.'
-                    )
-
+                messages.success(
+                    request,
+                    '%s contribution(s) imported.' % imported
+                )
                 return redirect(
                     'geokey_dataimports:single_dataimport',
-                    project_id=dataimport.project.id,
-                    dataimport_id=dataimport.id
+                    project_id=project_id,
+                    dataimport_id=dataimport_id
                 )
 
         return self.render_to_response(context)

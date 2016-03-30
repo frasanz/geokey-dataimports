@@ -1,6 +1,7 @@
 """All tests for views."""
 
 import os
+import json
 
 from django.core.files import File
 from django.core.urlresolvers import reverse
@@ -17,6 +18,7 @@ from geokey.core.tests.helpers import render_helpers
 from geokey.users.tests.model_factories import UserFactory
 from geokey.projects.tests.model_factories import ProjectFactory
 from geokey.categories.tests.model_factories import CategoryFactory
+from geokey.contributions.models import Observation
 
 from .helpers import file_helpers
 from .model_factories import DataImportFactory
@@ -30,6 +32,7 @@ from ..views import (
     SingleDataImportPage,
     DataImportCreateCategoryPage,
     DataImportAssignFieldsPage,
+    DataImportAllDataFeaturesPage,
     RemoveDataImportPage
 )
 
@@ -67,6 +70,8 @@ class IndexPageTest(TestCase):
         DataImportFactory.create(project=self.project_4)
 
         di_to_delete = DataImportFactory.create(project=self.project_3)
+        if os.path.isfile(di_to_delete.file.path):
+            os.remove(di_to_delete.file.path)
         di_to_delete.delete()
 
         setattr(self.request, 'session', 'session')
@@ -2341,9 +2346,9 @@ class DataImportAssignFieldsPageTest(TestCase):
 
     def test_post_when_no_category(self):
         """
-        Test POST with with admin, when category is not selected.
+        Test POST with with admin, when category is not associated.
 
-        It should not assign fields, when category is not selected.
+        It should not assign fields, when category is not associated.
         """
         self.dataimport.category = None
         self.dataimport.save()
@@ -2424,6 +2429,467 @@ class DataImportAssignFieldsPageTest(TestCase):
 
         reference = DataImport.objects.get(pk=self.dataimport.id)
         self.assertIsNone(reference.keys)
+
+
+class DataImportAllDataFeaturesPageTest(TestCase):
+    """Test data import all data features page."""
+
+    def setUp(self):
+        """Set up test."""
+        self.factory = RequestFactory()
+        self.request = HttpRequest()
+        self.view = DataImportAllDataFeaturesPage.as_view()
+
+        self.user = UserFactory.create()
+        self.contributor = UserFactory.create()
+        self.admin = UserFactory.create()
+
+        self.project = ProjectFactory.create(
+            add_admins=[self.admin],
+            add_contributors=[self.contributor]
+        )
+        self.dataimport = DataImportFactory.create(project=self.project)
+
+        ids = []
+        self.datafeatures = {
+            'type': 'FeatureCollection',
+            'features': []
+        }
+        for datafeature in self.dataimport.datafeatures.all():
+            self.datafeatures['features'].append({
+                'type': 'Feature',
+                'id': datafeature.id,
+                'geometry': json.loads(datafeature.geometry.json)
+            })
+            ids.append(datafeature.id)
+
+        self.data = {
+            'ids': json.dumps(ids)
+        }
+        self.url = reverse(
+            'geokey_dataimports:dataimport_all_datafeatures',
+            kwargs={
+                'project_id': self.project.id,
+                'dataimport_id': self.dataimport.id
+            }
+        )
+
+        setattr(self.request, 'session', 'session')
+        messages = FallbackStorage(self.request)
+        setattr(self.request, '_messages', messages)
+
+    def tearDown(self):
+        """Tear down test."""
+        for dataimport in DataImport.objects.all():
+            if dataimport.file:
+                dataimport.file.delete()
+
+    def test_get_with_anonymous(self):
+        """
+        Test GET with with anonymous.
+
+        It should redirect to login page.
+        """
+        self.request.user = AnonymousUser()
+        self.request.method = 'GET'
+        response = self.view(
+            self.request,
+            project_id=self.project.id,
+            dataimport_id=self.dataimport.id
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('/admin/account/login/', response['location'])
+
+    def test_get_with_user(self):
+        """
+        Test GET with with user.
+
+        It should not allow to access the page, when user is not an
+        administrator.
+        """
+        self.request.user = self.user
+        self.request.method = 'GET'
+        response = self.view(
+            self.request,
+            project_id=self.project.id,
+            dataimport_id=self.dataimport.id
+        ).render()
+
+        rendered = render_to_string(
+            'di_all_datafeatures.html',
+            {
+                'GEOKEY_VERSION': version.get_version(),
+                'PLATFORM_NAME': get_current_site(self.request).name,
+                'user': self.request.user,
+                'messages': get_messages(self.request),
+                'error': 'Not found.',
+                'error_description': does_not_exist_msg('Data import')
+            }
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            render_helpers.remove_csrf(response.content.decode('utf-8')),
+            rendered
+        )
+
+    def test_get_with_contributor(self):
+        """
+        Test GET with with contributor.
+
+        It should not allow to access the page, when user is not an
+        administrator.
+        """
+        self.request.user = self.contributor
+        self.request.method = 'GET'
+        response = self.view(
+            self.request,
+            project_id=self.project.id,
+            dataimport_id=self.dataimport.id
+        ).render()
+
+        rendered = render_to_string(
+            'di_all_datafeatures.html',
+            {
+                'GEOKEY_VERSION': version.get_version(),
+                'PLATFORM_NAME': get_current_site(self.request).name,
+                'user': self.request.user,
+                'messages': get_messages(self.request),
+                'error': 'Not found.',
+                'error_description': does_not_exist_msg('Data import')
+            }
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            render_helpers.remove_csrf(response.content.decode('utf-8')),
+            rendered
+        )
+
+    def test_get_with_admin(self):
+        """
+        Test GET with with admin.
+
+        It should render the page with a project, data import and all data
+        features.
+        """
+        self.request.user = self.admin
+        self.request.method = 'GET'
+        response = self.view(
+            self.request,
+            project_id=self.project.id,
+            dataimport_id=self.dataimport.id
+        ).render()
+
+        rendered = render_to_string(
+            'di_all_datafeatures.html',
+            {
+                'GEOKEY_VERSION': version.get_version(),
+                'PLATFORM_NAME': get_current_site(self.request).name,
+                'user': self.request.user,
+                'messages': get_messages(self.request),
+                'project': self.project,
+                'dataimport': self.dataimport,
+                'datafeatures': self.datafeatures
+            }
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            render_helpers.remove_csrf(response.content.decode('utf-8')),
+            rendered
+        )
+
+    def test_get_when_no_project(self):
+        """
+        Test GET with with admin, when project does not exist.
+
+        It should inform user that data import does not exist.
+        """
+        self.request.user = self.admin
+        self.request.method = 'GET'
+        response = self.view(
+            self.request,
+            project_id=self.project.id + 123,
+            dataimport_id=self.dataimport.id
+        ).render()
+
+        rendered = render_to_string(
+            'di_all_datafeatures.html',
+            {
+                'GEOKEY_VERSION': version.get_version(),
+                'PLATFORM_NAME': get_current_site(self.request).name,
+                'user': self.request.user,
+                'messages': get_messages(self.request),
+                'error': 'Not found.',
+                'error_description': does_not_exist_msg('Data import'),
+            }
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            render_helpers.remove_csrf(response.content.decode('utf-8')),
+            rendered
+        )
+
+    def test_get_when_no_dataimport(self):
+        """
+        Test GET with with admin, when data import does not exist.
+
+        It should inform user that data import does not exist.
+        """
+        self.request.user = self.admin
+        self.request.method = 'GET'
+        response = self.view(
+            self.request,
+            project_id=self.project.id,
+            dataimport_id=self.dataimport.id + 123
+        ).render()
+
+        rendered = render_to_string(
+            'di_all_datafeatures.html',
+            {
+                'GEOKEY_VERSION': version.get_version(),
+                'PLATFORM_NAME': get_current_site(self.request).name,
+                'user': self.request.user,
+                'messages': get_messages(self.request),
+                'error': 'Not found.',
+                'error_description': does_not_exist_msg('Data import'),
+            }
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            render_helpers.remove_csrf(response.content.decode('utf-8')),
+            rendered
+        )
+
+    def test_post_with_anonymous(self):
+        """
+        Test POST with with anonymous.
+
+        It should redirect to login page.
+        """
+        request = self.factory.post(self.url, self.data)
+        request.user = AnonymousUser()
+
+        setattr(request, 'session', 'session')
+        messages = FallbackStorage(request)
+        setattr(request, '_messages', messages)
+
+        response = self.view(
+            request,
+            project_id=self.project.id,
+            dataimport_id=self.dataimport.id
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('/admin/account/login/', response['location'])
+        self.assertEqual(DataFeature.objects.filter(imported=True).count(), 0)
+        self.assertEqual(Observation.objects.count(), 0)
+
+    def test_post_with_user(self):
+        """
+        Test POST with with user.
+
+        It should not allow to convert data features to contributions, when
+        user is not an administrator.
+        """
+        request = self.factory.post(self.url, self.data)
+        request.user = self.user
+
+        setattr(request, 'session', 'session')
+        messages = FallbackStorage(request)
+        setattr(request, '_messages', messages)
+
+        response = self.view(
+            request,
+            project_id=self.project.id,
+            dataimport_id=self.dataimport.id
+        ).render()
+
+        rendered = render_to_string(
+            'di_all_datafeatures.html',
+            {
+                'GEOKEY_VERSION': version.get_version(),
+                'PLATFORM_NAME': get_current_site(request).name,
+                'user': request.user,
+                'messages': get_messages(request),
+                'error': 'Not found.',
+                'error_description': does_not_exist_msg('Data import')
+            }
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            render_helpers.remove_csrf(response.content.decode('utf-8')),
+            rendered
+        )
+        self.assertEqual(DataFeature.objects.filter(imported=True).count(), 0)
+        self.assertEqual(Observation.objects.count(), 0)
+
+    def test_post_with_contributor(self):
+        """
+        Test POST with with contributor.
+
+        It should not allow to convert data features to contributions, when
+        user is not an administrator.
+        """
+        request = self.factory.post(self.url, self.data)
+        request.user = self.contributor
+
+        setattr(request, 'session', 'session')
+        messages = FallbackStorage(request)
+        setattr(request, '_messages', messages)
+
+        response = self.view(
+            request,
+            project_id=self.project.id,
+            dataimport_id=self.dataimport.id
+        ).render()
+
+        rendered = render_to_string(
+            'di_all_datafeatures.html',
+            {
+                'GEOKEY_VERSION': version.get_version(),
+                'PLATFORM_NAME': get_current_site(request).name,
+                'user': request.user,
+                'messages': get_messages(request),
+                'error': 'Not found.',
+                'error_description': does_not_exist_msg('Data import')
+            }
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            render_helpers.remove_csrf(response.content.decode('utf-8')),
+            rendered
+        )
+        self.assertEqual(DataFeature.objects.filter(imported=True).count(), 0)
+        self.assertEqual(Observation.objects.count(), 0)
+
+    def test_post_when_no_project(self):
+        """
+        Test POST with with admin, when project does not exist.
+
+        It should inform user that data import does not exist.
+        """
+        request = self.factory.post(self.url, self.data)
+        request.user = self.admin
+
+        setattr(request, 'session', 'session')
+        messages = FallbackStorage(request)
+        setattr(request, '_messages', messages)
+
+        response = self.view(
+            request,
+            project_id=self.project.id + 123,
+            dataimport_id=self.dataimport.id
+        ).render()
+
+        rendered = render_to_string(
+            'di_all_datafeatures.html',
+            {
+                'GEOKEY_VERSION': version.get_version(),
+                'PLATFORM_NAME': get_current_site(request).name,
+                'user': request.user,
+                'messages': get_messages(request),
+                'error': 'Not found.',
+                'error_description': does_not_exist_msg('Data import')
+            }
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            render_helpers.remove_csrf(response.content.decode('utf-8')),
+            rendered
+        )
+        self.assertEqual(DataFeature.objects.filter(imported=True).count(), 0)
+        self.assertEqual(Observation.objects.count(), 0)
+
+    def test_post_when_no_dataimport(self):
+        """
+        Test POST with with admin, when data import does not exist.
+
+        It should inform user that data import does not exist.
+        """
+        request = self.factory.post(self.url, self.data)
+        request.user = self.admin
+
+        setattr(request, 'session', 'session')
+        messages = FallbackStorage(request)
+        setattr(request, '_messages', messages)
+
+        response = self.view(
+            request,
+            project_id=self.project.id,
+            dataimport_id=self.dataimport.id + 123
+        ).render()
+
+        rendered = render_to_string(
+            'di_all_datafeatures.html',
+            {
+                'GEOKEY_VERSION': version.get_version(),
+                'PLATFORM_NAME': get_current_site(request).name,
+                'user': request.user,
+                'messages': get_messages(request),
+                'error': 'Not found.',
+                'error_description': does_not_exist_msg('Data import')
+            }
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            render_helpers.remove_csrf(response.content.decode('utf-8')),
+            rendered
+        )
+        self.assertEqual(DataFeature.objects.filter(imported=True).count(), 0)
+        self.assertEqual(Observation.objects.count(), 0)
+
+    def test_post_when_no_category(self):
+        """
+        Test POST with with admin, when category is not associated.
+
+        It should not allow to convert data features to contributions, when
+        category is not associated.
+        """
+        self.dataimport.category = None
+        self.dataimport.save()
+
+        request = self.factory.post(self.url, self.data)
+        request.user = self.admin
+
+        setattr(request, 'session', 'session')
+        messages = FallbackStorage(request)
+        setattr(request, '_messages', messages)
+
+        response = self.view(
+            request,
+            project_id=self.project.id,
+            dataimport_id=self.dataimport.id
+        ).render()
+
+        rendered = render_to_string(
+            'di_all_datafeatures.html',
+            {
+                'GEOKEY_VERSION': version.get_version(),
+                'PLATFORM_NAME': get_current_site(self.request).name,
+                'user': request.user,
+                'messages': get_messages(request),
+                'project': self.project,
+                'dataimport': self.dataimport,
+                'datafeatures': self.datafeatures
+            }
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            render_helpers.remove_csrf(response.content.decode('utf-8')),
+            rendered
+        )
+        self.assertEqual(DataFeature.objects.filter(imported=True).count(), 0)
+        self.assertEqual(Observation.objects.count(), 0)
 
 
 class RemoveDataImportPageTest(TestCase):
