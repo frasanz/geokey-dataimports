@@ -676,7 +676,7 @@ class DataImportAllDataFeaturesPage(DataImportContext, TemplateView):
                     request,
                     'The data import has no category associated with it.'
                 )
-            elif not dataimport.keys:
+            elif dataimport.keys is None:
                 messages.error(
                     request,
                     'The data import has no fields assigned.'
@@ -699,8 +699,10 @@ class DataImportAllDataFeaturesPage(DataImportContext, TemplateView):
                 for datafeature in datafeatures:
                     properties = datafeature.properties
 
-                    for key, value in properties.iteritems():
-                        if key in lookupfields:
+                    for key, value in dict(properties).iteritems():
+                        if key not in dataimport.keys:
+                            del properties[key]
+                        elif key in lookupfields:
                             value, created = LookupValue.objects.get_or_create(
                                 name=value,
                                 field=lookupfields[key]

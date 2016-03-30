@@ -36,7 +36,6 @@ class DataImportFactory(factory.django.DjangoModelFactory):
 class DataFieldFactory(factory.django.DjangoModelFactory):
     """Fake a single data field."""
 
-    key = factory.Sequence(lambda n: 'field-%s' % n)
     types = ['TextField']
 
     dataimport = factory.SubFactory(DataImportFactory)

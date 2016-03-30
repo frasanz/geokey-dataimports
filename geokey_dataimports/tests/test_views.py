@@ -17,7 +17,10 @@ from geokey import version
 from geokey.core.tests.helpers import render_helpers
 from geokey.users.tests.model_factories import UserFactory
 from geokey.projects.tests.model_factories import ProjectFactory
-from geokey.categories.tests.model_factories import CategoryFactory
+from geokey.categories.tests.model_factories import (
+    CategoryFactory,
+    TextFieldFactory
+)
 from geokey.contributions.models import Observation
 
 from .helpers import file_helpers
@@ -2448,7 +2451,16 @@ class DataImportAllDataFeaturesPageTest(TestCase):
             add_admins=[self.admin],
             add_contributors=[self.contributor]
         )
-        self.dataimport = DataImportFactory.create(project=self.project)
+        self.category = CategoryFactory.create(project=self.project)
+        self.dataimport = DataImportFactory.create(
+            keys=['Name'],
+            project=self.project,
+            category=self.category
+        )
+        TextFieldFactory.create(
+            key='Name',
+            category=self.category
+        )
 
         ids = []
         self.datafeatures = {
@@ -2769,6 +2781,75 @@ class DataImportAllDataFeaturesPageTest(TestCase):
         self.assertEqual(DataFeature.objects.filter(imported=True).count(), 0)
         self.assertEqual(Observation.objects.count(), 0)
 
+    def test_post_with_admin(self):
+        """
+        Test POST with with admin.
+
+        It should convert data features to contributions, when user is an
+        administrator.
+        """
+        request = self.factory.post(self.url, self.data)
+        request.user = self.admin
+
+        setattr(request, 'session', 'session')
+        messages = FallbackStorage(request)
+        setattr(request, '_messages', messages)
+
+        response = self.view(
+            request,
+            project_id=self.project.id,
+            dataimport_id=self.dataimport.id
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(
+            reverse(
+                'geokey_dataimports:single_dataimport',
+                kwargs={
+                    'project_id': self.project.id,
+                    'dataimport_id': self.dataimport.id
+                }
+            ),
+            response['location']
+        )
+        self.assertEqual(DataFeature.objects.filter(imported=True).count(), 3)
+        self.assertEqual(Observation.objects.count(), 3)
+
+    def test_post_when_no_ids(self):
+        """
+        Test POST with with admin, when no IDs are provided.
+
+        It should not allow to convert data features to contributions, when
+        no IDs are provided in the request.
+        """
+        self.data = {}
+        request = self.factory.post(self.url, self.data)
+        request.user = self.admin
+
+        setattr(request, 'session', 'session')
+        messages = FallbackStorage(request)
+        setattr(request, '_messages', messages)
+
+        response = self.view(
+            request,
+            project_id=self.project.id,
+            dataimport_id=self.dataimport.id
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(
+            reverse(
+                'geokey_dataimports:single_dataimport',
+                kwargs={
+                    'project_id': self.project.id,
+                    'dataimport_id': self.dataimport.id
+                }
+            ),
+            response['location']
+        )
+        self.assertEqual(DataFeature.objects.filter(imported=True).count(), 0)
+        self.assertEqual(Observation.objects.count(), 0)
+
     def test_post_when_no_project(self):
         """
         Test POST with with admin, when project does not exist.
@@ -2856,6 +2937,93 @@ class DataImportAllDataFeaturesPageTest(TestCase):
         """
         self.dataimport.category = None
         self.dataimport.save()
+
+        request = self.factory.post(self.url, self.data)
+        request.user = self.admin
+
+        setattr(request, 'session', 'session')
+        messages = FallbackStorage(request)
+        setattr(request, '_messages', messages)
+
+        response = self.view(
+            request,
+            project_id=self.project.id,
+            dataimport_id=self.dataimport.id
+        ).render()
+
+        rendered = render_to_string(
+            'di_all_datafeatures.html',
+            {
+                'GEOKEY_VERSION': version.get_version(),
+                'PLATFORM_NAME': get_current_site(self.request).name,
+                'user': request.user,
+                'messages': get_messages(request),
+                'project': self.project,
+                'dataimport': self.dataimport,
+                'datafeatures': self.datafeatures
+            }
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            render_helpers.remove_csrf(response.content.decode('utf-8')),
+            rendered
+        )
+        self.assertEqual(DataFeature.objects.filter(imported=True).count(), 0)
+        self.assertEqual(Observation.objects.count(), 0)
+
+    def test_post_when_no_fields(self):
+        """
+        Test POST with with admin, when fields are not assigned.
+
+        It should not allow to convert data features to contributions, when
+        fields are not assigned.
+        """
+        self.dataimport.keys = None
+        self.dataimport.save()
+
+        request = self.factory.post(self.url, self.data)
+        request.user = self.admin
+
+        setattr(request, 'session', 'session')
+        messages = FallbackStorage(request)
+        setattr(request, '_messages', messages)
+
+        response = self.view(
+            request,
+            project_id=self.project.id,
+            dataimport_id=self.dataimport.id
+        ).render()
+
+        rendered = render_to_string(
+            'di_all_datafeatures.html',
+            {
+                'GEOKEY_VERSION': version.get_version(),
+                'PLATFORM_NAME': get_current_site(self.request).name,
+                'user': request.user,
+                'messages': get_messages(request),
+                'project': self.project,
+                'dataimport': self.dataimport,
+                'datafeatures': self.datafeatures
+            }
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            render_helpers.remove_csrf(response.content.decode('utf-8')),
+            rendered
+        )
+        self.assertEqual(DataFeature.objects.filter(imported=True).count(), 0)
+        self.assertEqual(Observation.objects.count(), 0)
+
+    def test_post_when_project_is_locked(self):
+        """
+        Test POST with with admin, when project is locked.
+
+        It should not assign fields, when project is locked.
+        """
+        self.project.islocked = True
+        self.project.save()
 
         request = self.factory.post(self.url, self.data)
         request.user = self.admin
