@@ -1,13 +1,12 @@
-"""GeoKey settings for Travis CI."""
+"""GeoKey settings."""
 
-import os.path
 from geokey.core.settings.dev import *
 
 
-DEFAULT_FROM_EMAIL = 'geokey@travis-ci.org'
+DEFAULT_FROM_EMAIL = 'no-reply@travis-ci.org'
 ACCOUNT_EMAIL_VERIFICATION = 'optional'
 
-SECRET_KEY = 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
+SECRET_KEY = 'xxxxxxxxxxxxxxxxxxxxxxxxx'
 
 DATABASES = {
     'default': {
@@ -29,5 +28,4 @@ STATIC_URL = '/static/'
 MEDIA_ROOT = normpath(join(dirname(dirname(abspath(__file__))), 'assets'))
 MEDIA_URL = '/assets/'
 
-WSGI_APPLICATION = 'settings.wsgi.application'
-ROOT_URLCONF = 'settings.urls'
+WSGI_APPLICATION = 'wsgi.application'
