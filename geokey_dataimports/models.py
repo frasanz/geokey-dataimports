@@ -300,13 +300,11 @@ class DataField(TimeStampedModel):
                 fieldtype
             )
 
-        if suggested_key != proposed_key:
+        if self.key != self.name:
             for datafeature in self.dataimport.datafeatures.all():
                 properties = datafeature.properties
-
-                if proposed_key in properties:
-                    properties[suggested_key] = properties.pop(proposed_key)
-
+                if self.name in properties:
+                    properties[self.key] = properties.pop(self.name)
                 datafeature.properties = properties
                 datafeature.save()
 
