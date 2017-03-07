@@ -145,7 +145,7 @@ data-dataimport-id="{{ dataimport.id }}"
         }).addTo(window.map);
 
         // Add features
-        if (features) {
+        if (features && features.features.length) {
             features = L.geoJson(features, {
                 style: {
                     color: selectedColor
