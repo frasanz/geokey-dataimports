@@ -16,6 +16,7 @@ from braces.views import LoginRequiredMixin
 
 from geokey.projects.models import Project
 from geokey.projects.views import ProjectContext
+from geokey.categories.base import DEFAULT_STATUS
 from geokey.categories.models import Category, LookupValue
 from geokey.contributions.serializers import ContributionSerializer
 
@@ -471,7 +472,8 @@ class DataImportCreateCategoryPage(DataImportContext, CreateView):
                     name=form.instance.name,
                     description=form.instance.description,
                     project=dataimport.project,
-                    creator=self.request.user
+                    creator=self.request.user,
+                    default_status=DEFAULT_STATUS.active
                 )
                 dataimport.save()
 
