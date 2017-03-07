@@ -155,7 +155,8 @@ class AddDataImportPage(LoginRequiredMixin, ProjectContext, CreateView):
                         self.request,
                         'The file type does not seem to be compatible with '
                         'this extension just yet. Only GeoJSON, KML and CSV '
-                        'formats are supported.'
+                        '(with WKT formatted geometries) formats are '
+                        'supported.'
                     )
 
                 if form.instance.dataformat:
