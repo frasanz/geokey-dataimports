@@ -21,8 +21,16 @@ data-dataimport-id="{{ dataimport.id }}"
             </h3>
 
             <div id="map"></div>
+            <div id="loader" class="full-screen">
+                <div class="full-screen-container">
+                    <div class="full-screen-content">
+                        <div class="loader"></div>
+                        <div class="alert alert-info">Importing data... This might take a while. Please do not close the window.</div>
+                    </div>
+                </div>
+            </div>
 
-            <form method="POST" action="{% url 'geokey_dataimports:dataimport_all_datafeatures' project.id dataimport.id %}" novalidate>
+            <form method="POST" id="form" action="{% url 'geokey_dataimports:dataimport_all_datafeatures' project.id dataimport.id %}" novalidate>
                 {% csrf_token %}
 
                 <input type="hidden" id="ids" name="ids" />
@@ -38,6 +46,74 @@ data-dataimport-id="{{ dataimport.id }}"
 {% endblock %}
 
 {% block libraries %}
+<style>
+.full-screen {
+    display: none;
+    z-index: 9999;
+    position: fixed;
+    overflow: hidden;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+}
+.full-screen-container {
+    overflow-y: auto;
+    width: 100%;
+    height: 100%;
+    text-align: center;
+}
+.full-screen-container:before {
+    content: "";
+    display: inline-block;
+    vertical-align: middle;
+    height: 100%;
+}
+.full-screen-content {
+    display: inline-block;
+    vertical-align: middle;
+    max-width: 90%;
+    max-height: 90%;
+    padding: 10px;
+    text-align: center;
+}
+
+.loader {
+    display: block;
+    width: 50px;
+    height: 50px;
+    margin-right: auto;
+    margin-bottom: 20px;
+    margin-left: auto;
+    border-width: 7px;
+    border-style: solid;
+    border-color: #ffffff #262626;
+    border-radius: 100%;
+    animation-name: spin;
+    animation-duration: 0.7s;
+    animation-delay: 0.03s;
+    animation-iteration-count: infinite;
+}
+
+@-webkit-keyframes spin {
+    to {
+        -ms-transform: rotate(360deg);
+        -webkit-transform: rotate(360deg);
+        transform: rotate(360deg);
+    }
+}
+@keyframes spin {
+    to {
+        -ms-transform: rotate(360deg);
+        -webkit-transform: rotate(360deg);
+        transform: rotate(360deg);
+    }
+}
+</style>
+
 <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/leaflet.css">
 <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/leaflet.js"></script>
 
@@ -123,6 +199,13 @@ data-dataimport-id="{{ dataimport.id }}"
 
             $('input#ids').val(JSON.stringify(ids));
         }
+
+        /**
+         * Shows loader on data import.
+         */
+        $('#form').submit(function (event) {
+            $('#loader').fadeIn();
+        });
     });
 </script>
 {% endblock %}
