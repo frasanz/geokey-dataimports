@@ -52,7 +52,11 @@ class IndexPage(LoginRequiredMixin, TemplateView):
         """
         projects = Project.objects.annotate(
             dataimports_count=Count(Case(
-                When(~Q(dataimports__status='deleted'), then=1),
+                When(
+                    ~Q(dataimports__status='deleted') &
+                    Q(dataimports__isnull=False),
+                    then=1
+                ),
                 output_field=IntegerField(),
             ))
         ).filter(admins=self.request.user)

@@ -77,6 +77,11 @@ class IndexPageTest(TestCase):
             os.remove(di_to_delete.file.path)
         di_to_delete.delete()
 
+        self.project_1.dataimports_count = 0  # none added
+        self.project_2.dataimports_count = 1  # added
+        self.project_3.dataimports_count = 0  # added but deleted
+        self.project_4.dataimports_count = 1  # added
+
         setattr(self.request, 'session', 'session')
         messages = FallbackStorage(self.request)
         setattr(self.request, '_messages', messages)
