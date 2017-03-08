@@ -1,4 +1,42 @@
 $(document).ready(function() {
+    /*
+     * Loader
+     *
+     * Reacts to a button click, that has data-loader="true" set. Also uses
+     * text entered in data-loader-text (separated with commas to have
+     * multiple) to show info next to a loader spinner.
+    */
+    var timeout, interval;
+
+    $('[data-loader="true"]').click(function() {
+        var $this = $(this);
+        var loaderText = $this.data('loader-text');
+
+        if (loaderText) {
+            loaderText = loaderText.split(',');
+
+            if (interval) {
+                clearInterval(interval);
+            }
+
+            interval = window.setInterval(function() {
+                $('p.loader-text').empty().text(loaderText[Math.floor(Math.random() * loaderText.length)]);
+            }, 3000);
+        }
+
+        if (timeout) {
+            clearTimeout(timeout);
+        }
+
+        timeout = window.setTimeout(function() {
+            var errors = $this.closest('form').find('.has-error');
+
+            if (errors.length === 0) {
+                $('#loader').fadeIn();
+            }
+        }, 1500);
+    });
+
     // Toggle all checkboxes
     $('input.toggle').change(function() {
         $('input[name="ids"]').prop('checked', this.checked).trigger('change');

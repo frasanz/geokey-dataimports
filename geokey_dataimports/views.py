@@ -143,7 +143,6 @@ class AddDataImportPage(LoginRequiredMixin, ProjectContext, CreateView):
                 form.instance.creator = self.request.user
 
                 content_type = self.request.FILES.get('file').content_type
-
                 if content_type == 'application/json':
                     form.instance.dataformat = FORMAT.GeoJSON
                 elif content_type == 'application/vnd.google-earth.kml+xml':
@@ -155,8 +154,7 @@ class AddDataImportPage(LoginRequiredMixin, ProjectContext, CreateView):
                         self.request,
                         'The file type does not seem to be compatible with '
                         'this extension just yet. Only GeoJSON, KML and CSV '
-                        '(with WKT formatted geometries) formats are '
-                        'supported.'
+                        'with WKT formatted geometries formats are supported.'
                     )
 
                 if form.instance.dataformat:
@@ -494,7 +492,8 @@ class DataImportCreateCategoryPage(DataImportContext, CreateView):
 
                 messages.success(
                     self.request,
-                    'The category has been created.'
+                    'The category has been created. You may now import the '
+                    'data.'
                 )
                 return redirect(
                     'geokey_dataimports:single_dataimport',
@@ -592,7 +591,8 @@ class DataImportAssignFieldsPage(DataImportContext, TemplateView):
 
                 messages.success(
                     self.request,
-                    'The fields have been assigned.'
+                    'The fields have been assigned. You may now import the '
+                    'data.'
                 )
                 return redirect(
                     'geokey_dataimports:single_dataimport',

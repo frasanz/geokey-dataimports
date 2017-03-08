@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load static %}
 {% load di_tags %}
 
 {% block bodydata %}
@@ -10,6 +11,7 @@ data-dataimport-id="{{ dataimport.id }}"
 {% block title %} | Project: {{ project.name }} - Data import: {{ dataimport.name }} - Create category{% endblock %}
 
 {% block main %}
+{% include 'snippets/di_loader.html' %}
 {% include 'snippets/di_header.html' %}
 
 <div class="container">
@@ -70,8 +72,8 @@ data-dataimport-id="{{ dataimport.id }}"
             </table>
 
             <div class="form-group">
-                <button type="submit" class="btn btn-primary">Save</button>
-                <a href="{% url 'geokey_dataimports:single_dataimport' project.id dataimport.id %}" class="btn btn-link" role="button">Cancel</a>
+                <button type="submit" class="btn btn-lg btn-primary" data-loader="true" data-loader-text="Generating fields,Assigning field types,Structurising data,Storing information,Do not close this window">Create category</button>
+                <a href="{% url 'geokey_dataimports:single_dataimport' project.id dataimport.id %}" class="btn btn-lg btn-link" role="button">Cancel</a>
             </div>
         </form>
     </div>
@@ -79,6 +81,7 @@ data-dataimport-id="{{ dataimport.id }}"
 {% endblock %}
 
 {% block libraries %}
-<script type="text/javascript" src="/static/js/admin.ui.forms.validate.js"></script>
-<script type="text/javascript" src="/static/js/admin.ui.dataimports.js"></script>
+<script type="text/javascript" src="{% static 'js/admin.ui.forms.validate.js' %}"></script>
+<script type="text/javascript" src="{% static 'js/admin.ui.dataimports.js' %}"></script>
+<link rel="stylesheet" href="{% static 'css/dataimports.css' %}">
 {% endblock %}

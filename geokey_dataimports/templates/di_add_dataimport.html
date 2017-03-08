@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block bodydata %}
 data-project-id="{{ project.id }}"
@@ -8,6 +9,7 @@ data-project-locked="{{ project.islocked }}"
 {% block title %} | Project: {{ project.name }} - Add new data import{% endblock %}
 
 {% block main %}
+{% include 'snippets/di_loader.html' %}
 {% include 'snippets/di_header.html' %}
 
 <div class="container">
@@ -33,7 +35,7 @@ data-project-locked="{{ project.islocked }}"
             </div>
 
             <div class="form-group {% if form.errors.file %}has-error{% endif %}">
-                <label for="file" class="control-label">GeoJSON, KML or CSV (with <a href="https://en.wikipedia.org/wiki/Well-known_text" target="_blank">WKT formatted geometries</a>) file (required)</label>
+                <label for="file" class="control-label">GeoJSON, KML or CSV with <a href="https://en.wikipedia.org/wiki/Well-known_text" target="_blank">WKT formatted geometries</a> file (required)</label>
                 <input type="file" id="file" name="file" accept="application/json, application/vnd.google-earth.kml+xml, text/csv" data-target="file" required />
                 {% if form.errors.file %}<span class="help-block">{{ form.errors.file|striptags }}</span>{% endif %}
             </div>
@@ -70,8 +72,8 @@ data-project-locked="{{ project.islocked }}"
             {% endwith %}
 
             <div class="form-group">
-                <button type="submit" class="btn btn-primary">Save</button>
-                <a href="{% url 'geokey_dataimports:all_dataimports' project.id %}" class="btn btn-link" role="button">Cancel</a>
+                <button type="submit" class="btn btn-lg btn-primary" data-loader="true" data-loader-text="Checking file,Parsing file,Storing information,Do not close this window">Save data import</button>
+                <a href="{% url 'geokey_dataimports:all_dataimports' project.id %}" class="btn btn-lg btn-link" role="button">Cancel</a>
             </div>
         </form>
     </div>
@@ -79,37 +81,41 @@ data-project-locked="{{ project.islocked }}"
 {% endblock %}
 
 {% block libraries %}
-<link rel="stylesheet" href="/static/lib/bootstrap-fileinput/css/bootstrap-fileinput.min.css">
-<script type="text/javascript" src="/static/lib/bootstrap-fileinput/js/bootstrap-fileinput.min.js"></script>
+<link rel="stylesheet" href="{% static 'lib/bootstrap-fileinput/css/bootstrap-fileinput.min.css' %}">
+<script type="text/javascript" src="{% static 'lib/bootstrap-fileinput/js/bootstrap-fileinput.min.js' %}"></script>
 
-<script type="text/javascript" src="/static/js/admin.ui.forms.validate.js"></script>
-<script type="text/javascript" src="/static/js/admin.ui.fileinput.js"></script>
+<script type="text/javascript" src="{% static 'js/admin.ui.forms.validate.js' %}"></script>
+<script type="text/javascript" src="{% static 'js/admin.ui.fileinput.js' %}"></script>
+<script type="text/javascript" src="{% static 'js/admin.ui.dataimports.js' %}"></script>
+
+<link rel="stylesheet" href="{% static 'css/dataimports.css' %}">
 
 <script type="text/javascript">
-    // Initialise file upload
-    $('input:file').each(function() {
-        Ui.FileInput.init($(this), {
-            showUpload: false,
-            showCancel: false,
-            showPreview: false
-        });
+// Initialise file upload
+$('input:file').each(function() {
+    Ui.FileInput.init($(this), {
+        showUpload: false,
+        showCancel: false,
+        showPreview: false
     });
+});
 
-    $('input[name="category_create"]').change(function() {
-        var list = $('#category-list');
+// Hack to position Help Block for file upload (when it's required but empty)
+$('body').on('DOMNodeInserted', 'input:file ~ .help-block', function () {
+    $(this).detach().appendTo('.file-input');
+});
 
-        if (JSON.parse($(this).val().toLowerCase())) {
-            list.addClass('hidden');
-            list.find('select').attr('required', false);
-        } else {
-            list.removeClass('hidden');
-            list.find('select').attr('required', true);
-        }
-    });
+// Switch a list of categories on/off based on option selected
+$('input[name="category_create"]').change(function() {
+    var list = $('#category-list');
 
-    // Hack to position Help Block for file upload (when it's required but empty)
-    $('body').on('DOMNodeInserted', 'input:file ~ .help-block', function () {
-        $(this).detach().appendTo('.file-input');
-    });
+    if (JSON.parse($(this).val().toLowerCase())) {
+        list.addClass('hidden');
+        list.find('select').attr('required', false);
+    } else {
+        list.removeClass('hidden');
+        list.find('select').attr('required', true);
+    }
+});
 </script>
 {% endblock %}

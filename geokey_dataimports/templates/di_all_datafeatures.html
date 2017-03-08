@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load static %}
 {% load di_tags %}
 
 {% block bodydata %}
@@ -10,6 +11,7 @@ data-dataimport-id="{{ dataimport.id }}"
 {% block title %} | Project: {{ project.name }} - Data import: {{ dataimport.name }} - Data features{% endblock %}
 
 {% block main %}
+{% include 'snippets/di_loader.html' %}
 {% include 'snippets/di_header.html' %}
 
 <div class="container">
@@ -23,14 +25,6 @@ data-dataimport-id="{{ dataimport.id }}"
             <p>Please note: deselected (grey) features will not be imported.</p>
 
             <div id="map"></div>
-            <div id="loader" class="full-screen">
-                <div class="full-screen-container">
-                    <div class="full-screen-content">
-                        <div class="loader"></div>
-                        <div class="alert alert-info">Importing data... This might take a while. Please do not close the window.</div>
-                    </div>
-                </div>
-            </div>
 
             <form method="POST" id="form" action="{% url 'geokey_dataimports:dataimport_all_datafeatures' project.id dataimport.id %}" novalidate>
                 {% csrf_token %}
@@ -38,8 +32,8 @@ data-dataimport-id="{{ dataimport.id }}"
                 <input type="hidden" id="ids" name="ids" />
 
                 <div class="form-group">
-                    <button type="submit" class="btn btn-primary">Import</button>
-                    <a role="button" href="{% url 'geokey_dataimports:single_dataimport' project.id dataimport.id %}" class="btn btn-link">Cancel</a>
+                    <button type="submit" class="btn btn-lg btn-primary" data-loader="true" data-loader-text="Checking data,Formatting data,Storing information,Do not close this window">Import data</button>
+                    <a role="button" href="{% url 'geokey_dataimports:single_dataimport' project.id dataimport.id %}" class="btn btn-lg btn-link">Cancel</a>
                 </div>
             </form>
         </div>
@@ -48,166 +42,94 @@ data-dataimport-id="{{ dataimport.id }}"
 {% endblock %}
 
 {% block libraries %}
-<style>
-.full-screen {
-    display: none;
-    z-index: 9999;
-    position: fixed;
-    overflow: hidden;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
-}
-.full-screen-container {
-    overflow-y: auto;
-    width: 100%;
-    height: 100%;
-    text-align: center;
-}
-.full-screen-container:before {
-    content: "";
-    display: inline-block;
-    vertical-align: middle;
-    height: 100%;
-}
-.full-screen-content {
-    display: inline-block;
-    vertical-align: middle;
-    max-width: 90%;
-    max-height: 90%;
-    padding: 10px;
-    text-align: center;
-}
-
-.loader {
-    display: block;
-    width: 50px;
-    height: 50px;
-    margin-right: auto;
-    margin-bottom: 20px;
-    margin-left: auto;
-    border-width: 7px;
-    border-style: solid;
-    border-color: #ffffff #262626;
-    border-radius: 100%;
-    animation-name: spin;
-    animation-duration: 0.7s;
-    animation-delay: 0.03s;
-    animation-iteration-count: infinite;
-}
-
-@-webkit-keyframes spin {
-    to {
-        -ms-transform: rotate(360deg);
-        -webkit-transform: rotate(360deg);
-        transform: rotate(360deg);
-    }
-}
-@keyframes spin {
-    to {
-        -ms-transform: rotate(360deg);
-        -webkit-transform: rotate(360deg);
-        transform: rotate(360deg);
-    }
-}
-</style>
-
 <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/leaflet.css">
 <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/leaflet.js"></script>
 
+<script type="text/javascript" src="{% static 'js/admin.ui.dataimports.js' %}"></script>
+<link rel="stylesheet" href="{% static 'css/dataimports.css' %}">
+
 <script type="text/javascript">
-    $(function() {
-        'use strict';
+$(function() {
+    'use strict';
 
-        var features = {{ datafeatures|jsonify }};
+    var features = {{ datafeatures|jsonify }};
 
-        var selectedColor = '#265cb2';
-        var deselectedColor = '#c0c0c0';
+    var selectedColor = '#265cb2';
+    var deselectedColor = '#c0c0c0';
 
-        var selectedMarker = L.icon({
-            iconUrl: '/static/img/marker-selected.png',
-            iconSize: [32, 37],
-            iconAnchor: [16, 36],
-        });
-        var deselectedMarker = L.icon({
-            iconUrl: '/static/img/marker-deselected.png',
-            iconSize: [32, 37],
-            iconAnchor: [16, 36],
-        });
+    var selectedMarker = L.icon({
+        iconUrl: '/static/img/marker-selected.png',
+        iconSize: [32, 37],
+        iconAnchor: [16, 36],
+    });
+    var deselectedMarker = L.icon({
+        iconUrl: '/static/img/marker-deselected.png',
+        iconSize: [32, 37],
+        iconAnchor: [16, 36],
+    });
 
-        // Initialize map
-        window.map = L.map('map').setView([0, 0], 1);
+    // Initialize map
+    window.map = L.map('map').setView([0, 0], 1);
 
-        L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
-        }).addTo(window.map);
+    L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(window.map);
 
-        // Add features
-        if (features && features.features.length) {
-            features = L.geoJson(features, {
-                style: {
-                    color: selectedColor
-                },
-                pointToLayer: function (featureData, latlng) {
-                    return new L.Marker(latlng, {icon: selectedMarker})
-                },
-                onEachFeature: function(feature, layer) {
-                    feature.selected = true;
+    // Add features
+    if (features && features.features.length) {
+        features = L.geoJson(features, {
+            style: {
+                color: selectedColor
+            },
+            pointToLayer: function (featureData, latlng) {
+                return new L.Marker(latlng, {icon: selectedMarker})
+            },
+            onEachFeature: function(feature, layer) {
+                feature.selected = true;
 
-                    layer.on('click', function () {
-                        var marker, color;
+                layer.on('click', function () {
+                    var marker, color;
 
-                        if (feature.selected) {
-                            marker = deselectedMarker;
-                            color = deselectedColor;
-                            feature.selected = false;
-                        } else {
-                            marker = selectedMarker;
-                            color = deselectedColor;
-                            feature.selected = true;
-                        }
-
-                        if (layer.setIcon) {
-                            layer.setIcon(marker);
-                        } else {
-                            layer.setStyle({color: color});
-                        }
-
-                        checkSelectedFeatures();
-                    });
-                }
-            }).addTo(window.map);
-            window.map.fitBounds(features.getBounds());
-            checkSelectedFeatures();
-        }
-
-        /**
-         * Checks selected features, makes an array of IDs and adds to the form.
-         */
-        function checkSelectedFeatures() {
-            var ids = [];
-
-            if (features) {
-                features.eachLayer(function (layer) {
-                    if (layer.feature.selected) {
-                        ids.push(layer.feature.id);
+                    if (feature.selected) {
+                        marker = deselectedMarker;
+                        color = deselectedColor;
+                        feature.selected = false;
+                    } else {
+                        marker = selectedMarker;
+                        color = deselectedColor;
+                        feature.selected = true;
                     }
+
+                    if (layer.setIcon) {
+                        layer.setIcon(marker);
+                    } else {
+                        layer.setStyle({color: color});
+                    }
+
+                    checkSelectedFeatures();
                 });
             }
+        }).addTo(window.map);
+        window.map.fitBounds(features.getBounds());
+        checkSelectedFeatures();
+    }
 
-            $('input#ids').val(JSON.stringify(ids));
+    /**
+     * Checks selected features, makes an array of IDs and adds to the form.
+     */
+    function checkSelectedFeatures() {
+        var ids = [];
+
+        if (features) {
+            features.eachLayer(function (layer) {
+                if (layer.feature.selected) {
+                    ids.push(layer.feature.id);
+                }
+            });
         }
 
-        /**
-         * Shows loader on data import.
-         */
-        $('#form').submit(function (event) {
-            $('#loader').fadeIn();
-        });
-    });
+        $('input#ids').val(JSON.stringify(ids));
+    }
+});
 </script>
 {% endblock %}
