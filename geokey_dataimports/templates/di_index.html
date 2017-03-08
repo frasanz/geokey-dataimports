@@ -56,7 +56,7 @@
 
                         <p>
                             {% if project.status == 'inactive' %}<label class="label label-warning">Archived</label>{% endif %}
-                            {% with dataimports=project.dataimports.count %}<label class="label label-primary">{{ dataimports }} data import{{ dataimports|pluralize }}</label>{% endwith %}
+                            <label class="label label-primary">{{ project.dataimports_count }} data import{{ project.dataimports_count|pluralize }}</label>
                         </p>
 
                         <p class="meta">Created by {{ project.creator }} {{ project.created_at|timesince }} ago</p>
