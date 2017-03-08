@@ -60,7 +60,7 @@ class IndexPage(LoginRequiredMixin, TemplateView):
                 default=False,
                 output_field=BooleanField()
             )
-        ).distinct()
+        )
 
         filters = {}
         filter_for_projects = self.request.GET.get('filter')
@@ -76,7 +76,7 @@ class IndexPage(LoginRequiredMixin, TemplateView):
         filters[filter_to_add] = 'With data imports'
 
         return super(IndexPage, self).get_context_data(
-            projects=projects,
+            projects=projects.distinct(),
             filters=filters,
             *args,
             **kwargs
