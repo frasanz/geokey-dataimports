@@ -148,7 +148,7 @@ class AddDataImportPage(LoginRequiredMixin, ProjectContext, CreateView):
                     form.instance.dataformat = FORMAT.GeoJSON
                 elif content_type == 'application/vnd.google-earth.kml+xml':
                     form.instance.dataformat = FORMAT.KML
-                elif content_type == 'text/csv':
+                elif content_type in ['text/csv', 'application/vnd.ms-excel']:
                     form.instance.dataformat = FORMAT.CSV
                 else:
                     messages.error(
