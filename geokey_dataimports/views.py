@@ -19,6 +19,7 @@ from geokey.projects.views import ProjectContext
 from geokey.categories.base import DEFAULT_STATUS
 from geokey.categories.models import Category, LookupValue
 from geokey.contributions.serializers import ContributionSerializer
+from geokey.socialinteractions.models import SocialInteractionPost
 
 from .helpers.context_helpers import does_not_exist_msg
 from .base import FORMAT
@@ -684,6 +685,15 @@ class DataImportAllDataFeaturesPage(DataImportContext, TemplateView):
                     'The data import has no fields assigned.'
                 )
             else:
+
+                # temporarily disable post interactions
+                post_interactions_backup = {}
+                post_interactions = SocialInteractionPost.objects.filter(project_id=project_id)
+                for post_interaction in post_interactions:
+                    post_interactions_backup[post_interaction] = post_interaction.status
+                    post_interaction.status = 'inactive'
+                    post_interaction.save()
+
                 ids = data.get('ids')
 
                 if ids:
@@ -737,6 +747,11 @@ class DataImportAllDataFeaturesPage(DataImportContext, TemplateView):
                         imported += 1
                     except ValidationError:
                         pass
+
+                # restore post interactions
+                for post_interaction, status_backup in post_interactions_backup.iteritems():
+                    post_interaction.status = status_backup
+                    post_interaction.save()
 
                 messages.success(
                     request,
