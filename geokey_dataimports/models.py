@@ -88,14 +88,14 @@ def post_save_dataimport(sender, instance, created, **kwargs):
                     features.append(feature.ExportToJson())
         else:
             csv.field_size_limit(sys.maxsize)
-            file = open(instance.file.path, 'rU')
+            file_obj = open(instance.file.path, 'rU')
 
         if instance.dataformat == FORMAT.GeoJSON:
             reader = json.load(file)
             features = reader['features']
 
         if instance.dataformat == FORMAT.CSV:
-            import_from_csv(features, fields, file)
+            import_from_csv(features=features, fields=fields, file_obj=file_obj)
 
         for feature in features:
             geometries = {}
