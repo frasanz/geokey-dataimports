@@ -9,7 +9,6 @@ from osgeo import ogr
 from django.conf import settings
 from django.dispatch import receiver
 from django.db import models
-from django.utils.html import strip_tags
 from django.template.defaultfilters import slugify
 from django.contrib.postgres.fields import ArrayField
 from django.contrib.gis.db import models as gis
@@ -20,6 +19,7 @@ from model_utils.models import StatusModel, TimeStampedModel
 from geokey.projects.models import Project
 from geokey.categories.models import Category, Field
 
+from geokey_dataimports.helpers.model_helpers import import_from_csv
 from .helpers import type_helpers
 from .base import STATUS, FORMAT
 from .exceptions import FileParseError
@@ -95,26 +95,7 @@ def post_save_dataimport(sender, instance, created, **kwargs):
             features = reader['features']
 
         if instance.dataformat == FORMAT.CSV:
-            reader = csv.reader(file)
-
-            for fieldname in next(reader, None):
-                fields.append({
-                    'name': strip_tags(fieldname),
-                    'good_types': set(['TextField', 'LookupField']),
-                    'bad_types': set([])
-                })
-
-            line = 0
-            for row in reader:
-                line += 1
-                properties = {}
-
-                for i, column in enumerate(row):
-                    if column:
-                        field = fields[i]
-                        properties[field['name']] = column
-
-                features.append({'line': line, 'properties': properties})
+            import_from_csv(features, fields, file)
 
         for feature in features:
             geometries = {}
