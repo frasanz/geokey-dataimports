@@ -91,7 +91,7 @@ def post_save_dataimport(sender, instance, created, **kwargs):
             file_obj = open(instance.file.path, 'rU')
 
         if instance.dataformat == FORMAT.GeoJSON:
-            reader = json.load(file)
+            reader = json.load(file_obj)
             features = reader['features']
 
         if instance.dataformat == FORMAT.CSV:
