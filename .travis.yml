@@ -14,8 +14,8 @@ addons:
       - postgresql-9.4-postgis-2.3
 
 env:
-  - GEOKEY='>=1.4,<1.5' DJANGO='>=1.8,<1.9'
-  - GEOKEY='>=1.4,<1.5' DJANGO='>=1.9,<1.10'
+  - GEOKEY='>=1.4,<1.5' DJANGO='>=1.8,<1.9' DEPLOY=0
+  - GEOKEY='>=1.4,<1.5' DJANGO='>=1.9,<1.10' DEPLOY=1
 
 virtualenv:
   system_site_packages: true
@@ -54,3 +54,4 @@ deploy:
   on:
     tags: true
     branch: master
+    condition: $DEPLOY = 1
