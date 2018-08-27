@@ -45,7 +45,7 @@ If you're cloning the repository and have GeoKey running within a Docker contain
     /MyProjects/geokey/
     /MyProjects/geokey-dataimports/
 
-2. modify `Dockerfile` and add:
+2. modify `Dockerfile` (within "geokey" repository) and add:
 
 .. code-block:: console
 
