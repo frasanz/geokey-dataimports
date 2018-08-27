@@ -92,7 +92,7 @@ If you're cloning the repository and have GeoKey running within a Docker contain
       - ../geokey-dataimports/geokey_dataimports:/extensions/geokey-dataimports/geokey_dataimports
     ...
 
-You can also run migrations, make new ones, etc. using *geokey* container. For example, tu run only geokey-dataimports tests:
+You can also run migrations, make new ones, etc. using *geokey* container. For example, to run only geokey-dataimports tests:
 
 .. code-block:: console
 
