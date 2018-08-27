@@ -38,7 +38,14 @@ Or from cloned repository:
 
 If you're cloning the repository and have GeoKey running within a Docker container, configure like such:
 
-1. modify `Dockerfile` and add:
+1. make sure repositories are cloned next to each other, e.g. file structure is:
+
+.. code-block:: console
+
+    /MyProjects/geokey/
+    /MyProjects/geokey-dataimports/
+
+2. modify `Dockerfile` and add:
 
 .. code-block:: console
 
@@ -49,7 +56,7 @@ If you're cloning the repository and have GeoKey running within a Docker contain
     RUN pip install -e /app
     RUN pip install -e /extensions/geokey-dataimports
 
-2. modify `docker-compose.yml` and add a new volume:
+3. modify `docker-compose.yml` and add a new volume:
 
 .. code-block:: console
 
