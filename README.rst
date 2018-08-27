@@ -36,6 +36,29 @@ Or from cloned repository:
     cd geokey-dataimports
     pip install -e .
 
+If you're cloning the repository and have GeoKey running within a Docker container, configure like such:
+
+1. modify `Dockerfile` and add:
+
+```
+...
+ADD /geokey /app
+ADD /geokey-dataimports /extensions/geokey-dataimports
+...
+RUN pip install -e /app
+RUN pip install -e /extensions/geokey-dataimports
+```
+
+2. modify `docker-compose.yml` and add a new volume:
+
+```
+...
+volumes:
+  - ./geokey:/app/geokey
+  - ../geokey-dataimports/geokey_dataimports:/extensions/geokey-dataimports/geokey_dataimports
+...
+```
+
 Add the package to installed apps:
 
 .. code-block:: python
