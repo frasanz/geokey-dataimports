@@ -36,36 +36,6 @@ Or from cloned repository:
     cd geokey-dataimports
     pip install -e .
 
-If you're cloning the repository and have GeoKey running within a Docker container, configure like such:
-
-1. make sure repositories are cloned next to each other, e.g. file structure is:
-
-.. code-block:: console
-
-    /MyProjects/geokey/
-    /MyProjects/geokey-dataimports/
-
-2. modify `Dockerfile` (within "geokey" repository) and add:
-
-.. code-block:: console
-
-    ...
-    ADD /geokey /app
-    ADD /geokey-dataimports /extensions/geokey-dataimports
-    ...
-    RUN pip install -e /app
-    RUN pip install -e /extensions/geokey-dataimports
-
-3. modify `docker-compose.yml` and add a new volume:
-
-.. code-block:: console
-
-    ...
-    volumes:
-      - ./geokey:/app/geokey
-      - ../geokey-dataimports/geokey_dataimports:/extensions/geokey-dataimports/geokey_dataimports
-    ...
-
 Add the package to installed apps:
 
 .. code-block:: python
@@ -88,6 +58,45 @@ Copy static files:
     python manage.py collectstatic
 
 You're now ready to go!
+
+Run within Docker container
+---------------------------
+
+If you're cloning the repository and have GeoKey running within a Docker container, configure it like such:
+
+1. Make sure repositories are cloned next to each other, e.g. file structure is:
+
+.. code-block:: console
+
+    /MyProjects/geokey/
+    /MyProjects/geokey-dataimports/
+
+2. Modify *Dockerfile* (within "geokey" repository) so that it looks similar to:
+
+.. code-block:: console
+
+    ...
+    ADD /geokey /app
+    ADD /geokey-dataimports /extensions/geokey-dataimports
+    ...
+    RUN pip install -e /app
+    RUN pip install -e /extensions/geokey-dataimports
+
+3. Modify *docker-compose.yml* and add a new volume:
+
+.. code-block:: console
+
+    ...
+    volumes:
+      - ./geokey:/app/geokey
+      - ../geokey-dataimports/geokey_dataimports:/extensions/geokey-dataimports/geokey_dataimports
+    ...
+
+You can also run migrations, make new ones, etc. using *geokey* container. For example, tu run only geokey-dataimports tests:
+
+.. code-block:: console
+
+    docker-compose exec geokey python manage.py test geokey_dataimports
 
 Update
 ------
