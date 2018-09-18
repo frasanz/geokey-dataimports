@@ -13,7 +13,10 @@ from django.template.defaultfilters import slugify
 from django.contrib.postgres.fields import ArrayField
 from django.contrib.gis.db import models as gis
 
-from django_pgjson.fields import JsonBField
+try:
+    from django.contrib.postgres.fields import JSONField
+except ImportError:
+    from django_pgjson.fields import JsonBField as JSONField
 from model_utils.models import StatusModel, TimeStampedModel
 
 from geokey.projects.models import Project
@@ -297,7 +300,7 @@ class DataFeature(TimeStampedModel):
 
     imported = models.BooleanField(default=False)
     geometry = gis.GeometryField(geography=True)
-    properties = JsonBField(default={})
+    properties = JSONField(default={})
 
     dataimport = models.ForeignKey(
         'DataImport',

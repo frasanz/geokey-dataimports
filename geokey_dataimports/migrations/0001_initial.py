@@ -4,8 +4,10 @@ from __future__ import unicode_literals
 from django.db import models, migrations
 import django.contrib.gis.db.models.fields
 import model_utils.fields
-import django_pgjson.fields
-import django.contrib.postgres.fields
+try:
+    from django.contrib.postgres.fields import JSONField
+except ImportError:
+    from django_pgjson.fields import JsonBField as JSONField
 import django.utils.timezone
 from django.conf import settings
 
@@ -27,7 +29,7 @@ class Migration(migrations.Migration):
                 ('modified', model_utils.fields.AutoLastModifiedField(default=django.utils.timezone.now, verbose_name='modified', editable=False)),
                 ('imported', models.BooleanField(default=False)),
                 ('geometry', django.contrib.gis.db.models.fields.GeometryField(srid=4326, geography=True)),
-                ('properties', django_pgjson.fields.JsonBField(default={})),
+                ('properties', JSONField(default={})),
             ],
             options={
                 'abstract': False,
