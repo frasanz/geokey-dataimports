@@ -1,5 +1,4 @@
 """GeoKey settings."""
-import os
 
 from geokey.core.settings.dev import *
 
@@ -13,9 +12,9 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.contrib.gis.db.backends.postgis',
         'NAME': 'geokey',
-        'USER': 'django',
-        'PASSWORD': 'django123',
-        'HOST': os.environ.get('DJANGO_DATABASE_HOST', 'localhost'),
+        'USER': 'postgres',
+        'PASSWORD': '',
+        'HOST': '',
         'PORT': '',
     }
 }
