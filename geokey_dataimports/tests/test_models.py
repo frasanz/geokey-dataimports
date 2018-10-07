@@ -36,37 +36,6 @@ class DataImportTest(TestCase):
         dataimport.delete()
         DataImport.objects.get(pk=dataimport.id)
 
-    # def test_import_contributions(self):
-    #     """Test import contributions of data import."""
-    #     dataimport = DataImportFactory.create()
-    #     ids = [datafeature.id for datafeature in dataimport.datafeatures.all()]
-    #     response = dataimport.import_contributions(dataimport.creator, ids)
-    #     self.assertEqual(response, [])
-    #     self.assertEqual(Observation.objects.all(), 3)
-
-    # def test_import_contributions_when_ids_not_set(self):
-    #     """Test import contributions when IDs are not set."""
-    #     dataimport = DataImportFactory.create()
-    #     response = dataimport.import_contributions(dataimport.creator, [])
-    #     self.assertEqual(response, [])
-    #     self.assertEqual(Observation.objects.all(), 0)
-
-    # def test_import_contributions_when_category_not_set(self):
-    #     """Test import contributions when category fields are not set."""
-    #     dataimport = DataImportFactory.create(category=None)
-    #     ids = [datafeature.id for datafeature in dataimport.datafeatures.all()]
-    #     response = dataimport.import_contributions(dataimport.creator, ids)
-    #     self.assertEqual(len(response), 3)
-    #     self.assertEqual(Observation.objects.all(), 0)
-
-    # def test_import_contributions_when_category_fields_not_set(self):
-    #     """Test import contributions when category fields are not set."""
-    #     dataimport = DataImportFactory.create()
-    #     ids = [datafeature.id for datafeature in dataimport.datafeatures.all()]
-    #     response = dataimport.import_contributions(dataimport.creator, ids)
-    #     self.assertEqual(len(response), 3)
-    #     self.assertEqual(Observation.objects.all(), 0)
-
 
 class PostSaveProjectTest(TestCase):
     """Test post save for project."""
