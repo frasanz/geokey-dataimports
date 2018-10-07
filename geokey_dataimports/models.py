@@ -281,13 +281,23 @@ class DataField(TimeStampedModel):
                 fieldtype
             )
 
-        if self.key != self.name:
-            for datafeature in self.dataimport.datafeatures.all():
-                properties = datafeature.properties
-                if self.name in properties:
+        for datafeature in self.dataimport.datafeatures.all():
+            properties = datafeature.properties
+            if self.name in properties:
+                # Edge case: if field type is set as text but original value
+                # is a number - import will fail, because a method
+                # create_search_index within geokey/contributions/models.py
+                # will try to use number within regular expression. So the
+                # fix is to make sure value of such field type is always
+                # stringified.
+                if field.fieldtype == 'TextField':
+                    properties[self.name] = str(properties[self.name])
+                # If field key has changed - it needs to be reflected on feature
+                # properties too.
+                if self.key != self.name:
                     properties[self.key] = properties.pop(self.name)
-                datafeature.properties = properties
-                datafeature.save()
+            datafeature.properties = properties
+            datafeature.save()
 
         return field
 
