@@ -15,4 +15,4 @@ try:
         version=__version__
     )
 except BaseException:
-    print 'Please install GeoKey first'
+    print('Please install GeoKey first')
