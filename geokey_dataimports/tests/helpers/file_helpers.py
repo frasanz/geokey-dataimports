@@ -3,7 +3,7 @@
 import csv
 
 
-def get_csv_file(fieldnames=['ID', 'Geometry', 'Name', 'Short Description']):
+def get_csv_file(fieldnames=None):
     """
     Get CSV file.
 
@@ -19,7 +19,9 @@ def get_csv_file(fieldnames=['ID', 'Geometry', 'Name', 'Short Description']):
     FILE
         Generated CSV file.
     """
-    with open('test_csv.csv', 'wb') as file:
+    if fieldnames is None:
+        fieldnames = ['ID', 'Geometry', 'Name', 'Short Description']
+    with open('test_csv.csv', 'w') as file:
         csv_writer = csv.DictWriter(file, fieldnames=fieldnames)
         csv_writer.writeheader()
 
