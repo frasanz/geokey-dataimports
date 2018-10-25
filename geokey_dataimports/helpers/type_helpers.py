@@ -20,7 +20,7 @@ def is_numeric(value=''):
     boolean
         Whether the value is numeric.
     """
-    if isinstance(value, (str, unicode)):
+    if isinstance(value, str):
         try:
             float(value) if '.' in value else int(value)
         except ValueError:

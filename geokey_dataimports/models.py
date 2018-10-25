@@ -103,7 +103,7 @@ def post_save_dataimport(sender, instance, created, **kwargs):
         for feature in features:
             geometries = {}
 
-            for key, value in feature['properties'].iteritems():
+            for key, value in feature['properties'].items():
                 field = None
 
                 for existing_field in fields:

@@ -1,7 +1,7 @@
 """All views for the extension."""
 
 # -*- coding: utf-8 -*-
-from __future__ import unicode_literals
+
 
 import json
 
@@ -172,13 +172,12 @@ class AddDataImportPage(LoginRequiredMixin, ProjectContext, CreateView):
                                 )
 
                         return super(AddDataImportPage, self).form_valid(form)
-                    except FileParseError, error:
+                    except FileParseError as error:
                         messages.error(self.request, error.to_html())
-                    else:
-                        messages.success(
-                            self.request,
-                            'The data import has been added.'
-                        )
+                    messages.success(
+                        self.request,
+                        'The data import has been added.'
+                    )
 
         return self.render_to_response(context)
 
@@ -711,7 +710,7 @@ class DataImportAllDataFeaturesPage(DataImportContext, TemplateView):
                 for datafeature in datafeatures:
                     properties = datafeature.properties
 
-                    for key, value in dict(properties).iteritems():
+                    for key, value in dict(properties).items():
                         if key not in dataimport.keys:
                             del properties[key]
                         elif key in lookupfields:
@@ -749,7 +748,7 @@ class DataImportAllDataFeaturesPage(DataImportContext, TemplateView):
                         pass
 
                 # restore post interactions
-                for post_interaction, status_backup in post_interactions_backup.iteritems():
+                for post_interaction, status_backup in post_interactions_backup.items():
                     post_interaction.status = status_backup
                     post_interaction.save()
 

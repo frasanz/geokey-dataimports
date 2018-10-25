@@ -2,6 +2,7 @@ import csv
 import codecs
 
 from django.utils.html import strip_tags
+from six import PY3
 
 
 class UTF8Recoder:
@@ -36,7 +37,10 @@ class UnicodeReader:
 
 
 def import_from_csv(features, fields, file_obj):
-    reader = UnicodeReader(file_obj)
+    if PY3:
+        reader = csv.reader(file_obj)
+    else:
+        reader = UnicodeReader(file_obj)
     for fieldname in next(reader, None):
         fields.append({
             'name': strip_tags(fieldname),
