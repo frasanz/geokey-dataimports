@@ -20,7 +20,7 @@ Install
 
 geokey-dataimports requires:
 
-- Python version 2.7
+- Python version 2.7 or 3.6
 - GeoKey version 1.6 or greater
 
 Install the geokey-dataimports from PyPI:
