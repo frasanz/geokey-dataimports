@@ -36,7 +36,7 @@ data-project-locked="{{ project.islocked }}"
 
             <div class="form-group {% if form.errors.file %}has-error{% endif %}">
                 <label for="file" class="control-label">GeoJSON, KML or CSV with <a href="https://en.wikipedia.org/wiki/Well-known_text" target="_blank">WKT formatted geometries</a> file (required)</label>
-                <input type="file" id="file" name="file" accept="application/json, application/vnd.google-earth.kml+xml, text/csv" data-target="file" required />
+                <input type="file" id="file" name="file" accept="" data-target="file" required />
                 {% if form.errors.file %}<span class="help-block">{{ form.errors.file|striptags }}</span>{% endif %}
             </div>
 
