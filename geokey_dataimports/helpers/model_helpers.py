@@ -58,3 +58,6 @@ def import_from_csv(features, fields, file_obj):
                 properties[field['name']] = column
 
         features.append({'line': line, 'properties': properties})
+
+
+

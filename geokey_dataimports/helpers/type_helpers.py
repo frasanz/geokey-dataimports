@@ -44,7 +44,7 @@ def is_date(value=''):
         Whether the value is date.
     """
     try:
-        parse_date(str(value))
+        parse_date(value)
     except ParseError:
         return False
 

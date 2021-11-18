@@ -13,6 +13,9 @@ from django.template.defaultfilters import slugify
 from django.contrib.postgres.fields import ArrayField
 from django.contrib.gis.db import models as gis
 
+from bs4 import BeautifulSoup
+
+
 try:
     from django.contrib.postgres.fields import JSONField
 except ImportError:
@@ -88,7 +91,9 @@ def post_save_dataimport(sender, instance, created, **kwargs):
 
             for layer in reader:
                 for feature in layer:
-                    features.append(feature.ExportToJson())
+                    test = json.loads(feature.ExportToJson())
+                    test['properties']=table_to_json(test['properties']['Description'])[0]
+                    features.append(test)
         else:
             csv.field_size_limit(sys.maxsize)
             file_obj = open(instance.file.path, 'rU')
@@ -99,6 +104,7 @@ def post_save_dataimport(sender, instance, created, **kwargs):
 
         if instance.dataformat == FORMAT.CSV:
             import_from_csv(features=features, fields=fields, file_obj=file_obj)
+
 
         for feature in features:
             geometries = {}
@@ -294,7 +300,7 @@ class DataField(TimeStampedModel):
                 # fix is to make sure value of such field type is always
                 # stringified.
                 if field.fieldtype == 'TextField':
-                    properties[self.name] = str(properties[self.name])
+                    properties[self.name] =properties[self.name]
                 # If field key has changed - it needs to be reflected on feature
                 # properties too.
                 if self.key != self.name:
@@ -330,3 +336,17 @@ def post_save_category(sender, instance, **kwargs):
     """Remove associated data imports when the category gets deleted."""
     if instance.status == 'deleted':
         DataImport.objects.filter(category=instance).delete()
+
+def table_to_json(table):
+    fields = []
+    table_data = []
+    model = BeautifulSoup(table, features="html.parser")
+    datum = {}
+    ta = model.find_all('table')[0]
+    for i,tr in enumerate(ta.find_all('tr', recursive=False)):
+        fields.append((tr.find_all('td')[0]).text)
+        datum[fields[i]] = (tr.find_all('td')[1]).text
+    if datum:
+        table_data.append(datum)
+
+    return(table_data)
