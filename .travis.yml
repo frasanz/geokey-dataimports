@@ -37,6 +37,7 @@ before_script:
   - python -c "from geokey.version import get_version; print('GEOKEY %s' % get_version())"
   - pip install -r travis_ci/requirements.txt
   - pip install -e .
+  - pip install gdal==`gdal-config --version`
   - python travis_ci/manage.py migrate
 
 script:
