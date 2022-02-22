@@ -2,9 +2,9 @@
     :alt: PyPI Package
     :target: https://pypi.python.org/pypi/geokey-dataimports
 
-.. image:: https://img.shields.io/travis/ExCiteS/geokey-dataimports/master.svg
+.. image:: https://app.travis-ci.com/frasanz/geokey-dataimports.svg?branch=master
     :alt: Travis CI Build Status
-    :target: https://travis-ci.org/ExCiteS/geokey-dataimports
+    :target: https://app.travis-ci.com/frasanz/geokey-dataimports
 
 .. image:: https://img.shields.io/coveralls/ExCiteS/geokey-dataimports/master.svg
     :alt: Coveralls Test Coverage
