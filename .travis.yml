@@ -30,6 +30,8 @@ before_script:
   - psql template1 postgres -c 'create extension hstore;'
   - psql -c 'create database geokey;' -U postgres
   - psql -U postgres -d geokey -c 'create extension postgis;'
+  - pip install rsa==4.5
+  - pip install "regex<2022.1.18"
   - pip install geokey$GEOKEY
   - pip install django$DJANGO
   - python -c "import django; print('DJANGO %s ' % django.get_version())"
