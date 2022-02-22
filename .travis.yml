@@ -19,7 +19,7 @@ env:
 
 install:
   - sudo -E apt-get -yq update &>> ~/apt-get-update.log
-  - sudo apt-get install binutils libav-tools
+  - sudo apt-get install binutils ffmpeg 
   - sudo apt-get -yq install libgdal-dev python-gdal
   - gdal-config --version
   - export C_INCLUDE_PATH=/usr/include/gdal
