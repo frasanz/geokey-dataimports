@@ -5,14 +5,13 @@ services:
   - postgresql
 
 python:
-  - '2.7_with_system_site_packages'
-  - '3.6'
+  - '2.7'
 
 addons:
-  postgresql: '9.4'
+  postgresql: '9.6'
   apt:
     packages:
-      - postgresql-9.4-postgis-2.3
+      - postgresql-9.6-postgis-2.4
 
 env:
   - GEOKEY='>=1.6,<1.7' DJANGO='>=1.11,<1.12' DEPLOY=0
